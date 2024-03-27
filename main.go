@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm"
+	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm" // Builder Vault MPC SDK for wallet management
 	"golang.org/x/sync/errgroup"
 
 	"github.com/fatih/structs"
@@ -56,7 +56,7 @@ func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", stakeApiKey)
-	//req.Header.Set("Idempotency-Key", "E96E9CE5-A81E-4178-AAA7-4BDC7ED1BCC2") // ToDo - remove for demos
+	//req.Header.Set("Idempotency-Key", "E96E9CE5-A81E-4178-AAA7-4BDC7ED1BCC2")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -213,24 +213,11 @@ func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transa
 func main() {
 	stakeApiKey := os.Getenv("STAKE_API_KEY")
 	rpcApiKey := os.Getenv("RPC_API_KEY")
-	ethereumSenderAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A" // Set your Ethereum sender address here. E.g. "0x71Bff5FFeF6408dAe06c055caB770D76E04831d2"
+
+	// Define stake intent parameters
+	ethereumSenderAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeWithdrawalAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeFeeRecipientAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
-
-	// Create go-ethereum/rpc client with heaader-based authentication
-	rpcClient, err := rpc.Dial("https://svc.blockdaemon.com/ethereum/holesky/native")
-	if err != nil {
-		log.Fatal("Failed to connect to the Ethereum client:", err)
-	}
-	rpcClient.SetHeader("X-API-KEY", rpcApiKey)
-	client := ethclient.NewClient(rpcClient)
-
-	// Check balance available for staking
-	balance, err := client.BalanceAt(context.Background(), common.HexToAddress(ethereumSenderAddress), nil)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Balance at account:", ethereumSenderAddress, "=", (balance), "wei")
 
 	// Define stake intent request: 1x32ETH
 	stakeRequest := &Request{
@@ -243,12 +230,31 @@ func main() {
 		},
 	}
 
+	// Create go-ethereum/rpc client with header-based authentication
+	rpcClient, err := rpc.Dial("https://svc.blockdaemon.com/ethereum/holesky/native")
+	if err != nil {
+		log.Fatal("Failed to connect to the Ethereum client:", err)
+	}
+	rpcClient.SetHeader("X-API-KEY", rpcApiKey)
+	client := ethclient.NewClient(rpcClient)
+
+	// Check sender wallet balance available for staking
+	balance, err := client.BalanceAt(context.Background(), common.HexToAddress(ethereumSenderAddress), nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Balance at account:", ethereumSenderAddress, "=", (balance), "wei")
+
+	// Create stake intent nd receive transaction data
 	txData, contractAddress, totalAmount := createStakeIntent(stakeApiKey, stakeRequest)
 
+	// Craft transaction with stake intent unsigned tx data and blockchain inputs
 	unsignedTx, unsignedTxHash, chainID := craftTx(client, ethereumSenderAddress, contractAddress, totalAmount, txData)
 
+	// Sign the transaction with MPC wallet private key shares
 	signature := signTx(unsignedTxHash)
 
+	// Broadcast the transaction to the blockchain
 	txHash := sendTx(client, chainID, unsignedTx, signature)
 	fmt.Println("\nTransaction hash:", txHash)
 }
