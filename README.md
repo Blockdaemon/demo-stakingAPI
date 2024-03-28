@@ -11,18 +11,15 @@ sequenceDiagram
     box Builder Vault
       participant TSM1 as MPC Wallet <br>(private key share 1)
       participant TSM2 as MPC Wallet <br>(private key share 2)
-      participant TSM3 as MPC Wallet <br>(private key share 3)
     end
 
     StakeClient ->> StakeAPI: get StakeIntent unsigned tx data <br>(amount, withdrawal & recipient address)
-    StakeClient ->> Blockchain: get blockchain inputs for new tx<br>(gas fee, chainID, sender wallet nonce)
+    StakeClient ->> Blockchain: get blockchain inputs (gas, nonce) for new tx<br>(sender wallet)
     StakeClient ->> StakeClient: construct unsigned tx
-    StakeClient ->> TSM1: request signature of unsigned tx
+    StakeClient ->> TSM1: request signature (unsigned tx)
     TSM1 -->> StakeClient: return partial signature
-    StakeClient ->> TSM2: request signature of unsigned tx
+    StakeClient ->> TSM2: request signature (unsigned tx)
     TSM2 -->> StakeClient: return partial signature
-    StakeClient ->> TSM3: request signature of unsigned tx
-    TSM3 -->> StakeClient: return partial signature
     StakeClient ->> StakeClient: combine partial signatures
     StakeClient ->> Blockchain: broadcast signed tx<br>(signed tx, deposit contract)
 ```

@@ -219,12 +219,13 @@ func main() {
 	ethereumSenderAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeWithdrawalAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeFeeRecipientAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
+	stakeAmount := "32000000000" // denominated in Gwei
 
-	// Define stake intent request: 1x32ETH
+	// Define stake intent request
 	stakeRequest := &Request{
 		Stakes: []Stake{
 			{
-				Amount:            "32000000000", // denominated in Gwei
+				Amount:            stakeAmount,
 				WithdrawalAddress: stakeWithdrawalAddress,
 				FeeRecipient:      stakeFeeRecipientAddress,
 			},
