@@ -7,7 +7,7 @@ sequenceDiagram
     autonumber
     participant StakeClient as Sample stake<br> client application
     participant StakeAPI as Stake Intent API
-    participant Blockchain as Blockchain
+    participant Blockchain as Blockchain RPC API
     box Builder Vault
       participant TSM1 as MPC Wallet <br>(private key share 1)
       participant TSM2 as MPC Wallet <br>(private key share 2)
@@ -31,7 +31,7 @@ sequenceDiagram
 
 # Get Plans
 http -b GET https://svc.blockdaemon.com/boss/v1/plans \
-  X-API-KEY:$STAKE_API_KEY \
+  X-API-KEY:$STAKE_API_KEY
 
 # Post Intent
 http -b POST https://svc.blockdaemon.com/boss/v1/ethereum/holesky/stake-intents \

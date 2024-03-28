@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -50,13 +51,13 @@ type Response struct {
 func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, string, *big.Int) {
 	requestJson, _ := json.Marshal(stakeRequest)
 
-	fmt.Println("\nStake request:\n", structs.Map(stakeRequest))
+	fmt.Println("\nStake API request:\n", structs.Map(stakeRequest))
 
 	req, _ := http.NewRequest("POST", "https://svc.blockdaemon.com/boss/v1/ethereum/holesky/stake-intents", bytes.NewBuffer(requestJson))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", stakeApiKey)
-	//req.Header.Set("Idempotency-Key", "E96E9CE5-A81E-4178-AAA7-4BDC7ED1BCC2")
+	//req.Header.Set("Idempotency-Key", "7515F6E2-7A57-4BA5-9CFA-FA7F4ECD41CF")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -79,7 +80,7 @@ func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, strin
 		amount = amount.Mul(amount, new(big.Int).SetInt64(1000000000))
 		totalAmount.Add(totalAmount, amount)
 	}
-	fmt.Println("\nStake response:\n", structs.Map(stakeResponse))
+	fmt.Println("\nStake API response:\n", structs.Map(stakeResponse))
 
 	return stakeResponse.Ethereum.UnsignedTransaction, stakeResponse.Ethereum.ContractAddress, totalAmount
 }
@@ -182,13 +183,13 @@ func signTx(unsignedTxHash []byte) []byte {
 		panic(err)
 	}
 
-	// Construct Ethereum V R S signature format
+	// Construct Ethereum R S V signature format
 
 	sigBytes := make([]byte, 2*32+1)
 	copy(sigBytes[0:32], signature.R())
 	copy(sigBytes[32:64], signature.S())
 	sigBytes[64] = byte(signature.RecoveryID())
-	fmt.Println("\nTransaction signature:\n", sigBytes)
+	fmt.Println("\nTransaction signature:\n", hex.EncodeToString(sigBytes))
 
 	return sigBytes
 }
@@ -200,7 +201,7 @@ func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transa
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("\nSigned raw transaction:\n", signedTx.Data())
+	fmt.Println("\nSigned raw transaction:\n", hex.EncodeToString(signedTx.Data()))
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
@@ -214,7 +215,7 @@ func main() {
 	stakeApiKey := os.Getenv("STAKE_API_KEY")
 	rpcApiKey := os.Getenv("RPC_API_KEY")
 
-	// Define stake intent parameters
+	// ! Define stake intent parameters
 	ethereumSenderAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeWithdrawalAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
 	stakeFeeRecipientAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
@@ -245,16 +246,16 @@ func main() {
 	}
 	fmt.Println("Balance at account:", ethereumSenderAddress, "=", (balance), "wei")
 
-	// Create stake intent nd receive transaction data
+	// ! Create stake intent and receive transaction data
 	txData, contractAddress, totalAmount := createStakeIntent(stakeApiKey, stakeRequest)
 
-	// Craft transaction with stake intent unsigned tx data and blockchain inputs
+	// ! Craft transaction with stake intent unsigned tx data and blockchain inputs
 	unsignedTx, unsignedTxHash, chainID := craftTx(client, ethereumSenderAddress, contractAddress, totalAmount, txData)
 
-	// Sign the transaction with MPC wallet private key shares
+	// ! Sign the transaction with MPC wallet private key shares
 	signature := signTx(unsignedTxHash)
 
-	// Broadcast the transaction to the blockchain
+	// ! Broadcast the transaction to the blockchain
 	txHash := sendTx(client, chainID, unsignedTx, signature)
 	fmt.Println("\nTransaction hash:", txHash)
 }
