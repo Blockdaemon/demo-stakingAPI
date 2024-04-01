@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm" // Builder Vault MPC SDK for wallet management
 	"golang.org/x/sync/errgroup"
@@ -57,7 +58,7 @@ func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", stakeApiKey)
-	//req.Header.Set("Idempotency-Key", "7515F6E2-7A57-4BA5-9CFA-FA7F4ECD41CF")
+	//req.Header.Set("Idempotency-Key", "45C8C466-6EC6-4C8F-9C88-7B928AFF9A5F")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -117,18 +118,21 @@ func craftTx(client *ethclient.Client, ethereumSenderAddress string, contractAdd
 		log.Fatal(err)
 	}
 
-	unsignedTx := types.NewTx(&types.LegacyTx{
-		Nonce:    nonce,
-		To:       &decodedContactAddress,
-		Value:    totalAmount,
-		Gas:      gasLimit,
-		GasPrice: gasPrice,
-		Data:     common.FromHex(txData),
+	unsignedTx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		To:        &decodedContactAddress,
+		Value:     totalAmount,
+		Gas:       gasLimit,
+		GasTipCap: big.NewInt(2 * 1e9),  // 2 Gwei
+		GasFeeCap: big.NewInt(40 * 1e9), // 40 Gwei
+		Data:      common.FromHex(txData),
 	})
 
-	fmt.Println("\nCrafted unsigned transaction:\n", "Nonce:", unsignedTx.Nonce(), "\n GasPrice:", unsignedTx.GasPrice(), "\n Gas:", unsignedTx.Gas(), "\n To:", unsignedTx.To().String(), "\n Value:", unsignedTx.Value())
+	fmt.Println("\nCrafted unsigned transaction:\n", "Nonce:", unsignedTx.Nonce(), "\n GasFeeCap:", unsignedTx.GasFeeCap(), "\n Gas:", unsignedTx.Gas(), "\n To:", unsignedTx.To().String(), "\n Value:", unsignedTx.Value())
 
-	signer := types.NewEIP155Signer(chainID)
+	// create a NewLondonSigner for EIP 1559 transactions
+	signer := types.NewLondonSigner(chainID)
 
 	return unsignedTx, signer.Hash(unsignedTx).Bytes(), chainID
 }
@@ -197,11 +201,16 @@ func signTx(unsignedTxHash []byte) []byte {
 // ! Broadcast stake deposit to chain
 func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transaction, sigBytes []byte) string {
 
-	signedTx, err := unsignedTx.WithSignature(types.NewEIP155Signer(chainID), sigBytes)
+	signedTx, err := unsignedTx.WithSignature(types.NewLondonSigner(chainID), sigBytes)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("\nSigned raw transaction:\n", hex.EncodeToString(signedTx.Data()))
+
+	raw, err := rlp.EncodeToBytes(signedTx)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\nSigned raw transaction: 0x%x", raw)
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
@@ -258,5 +267,5 @@ func main() {
 
 	// ! Broadcast the transaction to the blockchain
 	txHash := sendTx(client, chainID, unsignedTx, signature)
-	fmt.Println("\nTransaction hash:", txHash)
+	fmt.Println("\nBroadcasted transaction hash:", txHash)
 }
