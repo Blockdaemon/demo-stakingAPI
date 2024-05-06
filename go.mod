@@ -3,7 +3,7 @@ module samplestakedemo
 go 1.21.0
 
 require (
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/fatih/structs v1.1.0
 	gitlab.com/Blockdaemon/go-tsm-sdkv2 v0.0.0-20240227205306-65d60d978f8d
 	golang.org/x/sync v0.6.0
