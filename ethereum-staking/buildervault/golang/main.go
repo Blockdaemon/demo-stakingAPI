@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm" // Builder Vault MPC SDK for wallet management
 	"golang.org/x/sync/errgroup"
@@ -129,7 +128,13 @@ func craftTx(client *ethclient.Client, ethereumSenderAddress string, contractAdd
 		Data:      common.FromHex(txData),
 	})
 
-	fmt.Println("\nCrafted unsigned transaction:\n", "Nonce:", unsignedTx.Nonce(), "\n GasFeeCap:", unsignedTx.GasFeeCap(), "\n Gas:", unsignedTx.Gas(), "\n To:", unsignedTx.To().String(), "\n Value:", unsignedTx.Value())
+	fmt.Println("\nCrafted unsigned transaction values:\n", "Nonce:", unsignedTx.Nonce(), "\n GasFeeCap:", unsignedTx.GasFeeCap(), "\n Gas:", unsignedTx.Gas(), "\n To:", unsignedTx.To().String(), "\n Value amount:", unsignedTx.Value(), "\n Hash:", unsignedTx.Hash())
+
+	raw, err := unsignedTx.MarshalBinary()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("\nCrafted unsigned transaction (hex encoded): 0x%x", raw)
 
 	// create a NewLondonSigner for EIP 1559 transactions
 	signer := types.NewLondonSigner(chainID)
@@ -193,7 +198,7 @@ func signTx(unsignedTxHash []byte) []byte {
 	copy(sigBytes[0:32], signature.R())
 	copy(sigBytes[32:64], signature.S())
 	sigBytes[64] = byte(signature.RecoveryID())
-	fmt.Println("\nTransaction signature:\n", hex.EncodeToString(sigBytes))
+	fmt.Println("\n\nTransaction signature (hex encoded):\n", hex.EncodeToString(sigBytes))
 
 	return sigBytes
 }
@@ -206,11 +211,11 @@ func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transa
 		panic(err)
 	}
 
-	raw, err := rlp.EncodeToBytes(signedTx)
+	raw, err := signedTx.MarshalBinary()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\nSigned raw transaction: 0x%x", raw)
+	fmt.Printf("\nSigned raw transaction (RLP encoded): 0x%x", raw)
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {

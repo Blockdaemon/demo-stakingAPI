@@ -1,0 +1,16 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2.11.2",
+    //"forwardPorts": [3000],
+    "customizations": {
+      // Configure properties specific to VS Code.
+      "vscode": {
+        // Add the IDs of extensions you want installed when the container is created.
+        "extensions": [
+            "markdown.showPreview",
+            "bierner.markdown-mermaid",
+            "aaron-bond.better-comments",
+            "ms-vscode.go"
+        ]
+      }
+    }
+}
