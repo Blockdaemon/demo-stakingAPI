@@ -54,7 +54,7 @@ async function main() {
     throw new Error('SOLANA_VALIDATOR_ADDRESS environment variable not set');
   }
 
-  // Set buildervault endpoints
+  // * BuilderVault mTLS authentication with publickey pinning: https://builder-vault-tsm.docs.blockdaemon.com/docs/authentication-3#public-key-pinning
 
   const serverMtlsPublicKeys = {
     0: `-----BEGIN CERTIFICATE-----\nMIICMTCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MDIxMzE3MjE0OFoXDTI5MDIxMzE3MjE0OFowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGlixcUc\nYC0ByeutoHHdi3zxWCg5iPAJcxVLvzBUdD2+XdCWEgS/xwFEef9Tl3xFdfK4iWSQ\nnjmtYMTaHMM6mfWjUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSAAwRQIgSDKHZmsnylzL8kopFSeo8L6LQGxyd/NsBRb+8STI\n1cECIQChi4cl5nJgTXCBzJEHicnRk/0vl+9zq6iABMV+KTXJxA==\n-----END CERTIFICATE-----`,
@@ -109,9 +109,9 @@ async function main() {
   const delegatorAddress = new web3.PublicKey(bs58.encode(compressedPublicKey));
   console.log(`Solana address of derived key m/44/501: ${delegatorAddress}\n`);
 
+  // * Using Blockdaemon RPC API for Solana: https://docs.blockdaemon.com/reference/how-to-access-solana-api
 
-  //const connection = new web3.Connection(`https://svc.blockdaemon.com/solana/${process.env.SOLANA_NETWORK}/native?apiKey=${process.env.BLOCKDAEMON_API_KEY}`, "confirmed");
-  const connection = new web3.Connection(`https://api.${process.env.SOLANA_NETWORK}.solana.com`, "confirmed");  // Todo: change to svc.blockdaemon.com when websockets is supported
+  const connection = new web3.Connection(`https://svc.blockdaemon.com/solana/${process.env.SOLANA_NETWORK}/native?apiKey=${process.env.BLOCKDAEMON_API_KEY}`, "confirmed");
 
   // Check if validator exists
   const voteAccounts = await connection.getVoteAccounts('finalized');
@@ -120,7 +120,7 @@ async function main() {
     throw "Validator address is not part of the active validators in the network";
   }
 
-  // Create a stake intent with the Staking Integration API
+  // * Create a stake intent with the Staking Integration API: https://docs.blockdaemon.com/reference/postsolanastakeintent
 
   const response = await createStakeIntent(process.env.BLOCKDAEMON_STAKE_API_KEY, {
     amount: amountLamports.toString(),
@@ -160,15 +160,8 @@ async function main() {
   // Broadcast the transaction
 
   console.log(`Full signed transaction base64: ${transaction.serialize().toString("base64")}\n`);
-  const latestBlockhash = await connection.getLatestBlockhash();
-  const txid = await web3.sendAndConfirmRawTransaction(connection, transaction.serialize(),
-  {
-    signature: bs58.encode(signature),
-    blockhash: latestBlockhash.blockhash,
-    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  })
-
-  console.log(`Confirmed transaction: https://explorer.solana.com/tx/${txid}/?cluster=${process.env.SOLANA_NETWORK}`)
+  const txid = await connection.sendRawTransaction(transaction.serialize());
+  console.log(`Broadcasted transaction: https://explorer.solana.com/tx/${txid}/?cluster=${process.env.SOLANA_NETWORK}`)
 }
 
 
@@ -208,6 +201,7 @@ async function signTx(
   chainPath: Uint32Array
 ): Promise<any> {
 
+  // * Builder Vault signing operation: https://builder-vault-tsm.docs.blockdaemon.com/docs/key-generation-and-signing#signing
 
   console.log(`Builder Vault signing transaction hash...`);
 
@@ -314,6 +308,8 @@ async function getKeyId(
   //   await SessionConfig.GenerateSessionID(),
   //   clients.length
   // );
+
+  // * Builder Vault Key Generation: https://builder-vault-tsm.docs.blockdaemon.com/docs/key-generation-and-signing#key-generation
 
   const masterKeyIds: string[] = [];
 
