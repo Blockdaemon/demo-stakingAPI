@@ -1,5 +1,5 @@
 
-# Ethereum staking on Testnet with Builder Vault wallet
+# TypeScript Ethereum staking with Builder Vault wallet
 
 ```mermaid
 sequenceDiagram
@@ -24,7 +24,7 @@ sequenceDiagram
 ```
 
 ### Prerequisites
-  - [Node.js](https://nodejs.org/en/download/package-manager) or use [code-spaces](https://codespaces.new/Blockdaemon/demo-buildervault-stakingAPI?quickstart=1)
+  - [Node.js](https://nodejs.org/en/download/package-manager) or launch in [code-spaces](https://codespaces.new/Blockdaemon/demo-buildervault-stakingAPI?quickstart=1)
   - Register for a demo Builder Vault tenant: https://www.blockdaemon.com/get-started/builder-vault-sandbox-registration
     - Download SDK bundle provided in registration email (extract authentication certificates)
     - Place Builder Vault authentication certificate key-pair `client.crt` & `client.key` in this nodejs folder
@@ -34,7 +34,7 @@ sequenceDiagram
 
 ### Step 1. Set environment variables in .env
 ```shell
-cd ethereum-staking/buildervault-wallet/nodejs/
+cd ethereum-staking/buildervault/nodejs/
 cp .env.example .env
 ```
 - update .env with API keys
