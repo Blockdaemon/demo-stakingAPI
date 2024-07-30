@@ -3,24 +3,32 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
+	"gitlab.com/Blockdaemon/go-tsm-sdkv2/ec"
 	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm" // Builder Vault MPC SDK for wallet management
+	"gitlab.com/Blockdaemon/go-tsm-sdkv2/tsm/tsmutils"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/fatih/structs"
+	"github.com/joho/godotenv"
 )
 
 type Stake struct {
@@ -47,17 +55,195 @@ type Response struct {
 	} `json:"ethereum"`
 }
 
-// ! Create stake intent
-func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, string, *big.Int) {
+// The BuilderVault MPC public keys of the players used to encrypt MPC protocol data end-to-end
+var playerB64Pubkeys = []string{
+	"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtDFBfanInAMHNKKDG2RW/DiSnYeI7scVvfHIwUIRdbPH0gBrsilqxlvsKZTakN8om/Psc6igO+224X8T0J9eMg==",
+	"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqvSkhonTeNhlETse8v3X7g4p100EW9xIqg4aRpD8yDXgB0UYjhd+gFtOCsRT2lRhuqNForqqC+YnBsJeZ4ANxg==",
+}
+
+func main() {
+
+	// Read environment variables and load .env file
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+		os.Exit(1)
+	}
+
+	apiKey := strings.TrimSpace(os.Getenv("BLOCKDAEMON_API_KEY"))
+	if apiKey == "" {
+		fmt.Println("BLOCKDAEMON_API_KEY environment variable not set")
+		os.Exit(1)
+	}
+
+	stakeApiKey := strings.TrimSpace(os.Getenv("BLOCKDAEMON_STAKE_API_KEY"))
+	if stakeApiKey == "" {
+		fmt.Println("BLOCKDAEMON_STAKE_API_KEY environment variable not set")
+		os.Exit(1)
+	}
+
+	ethereumNetwork := strings.TrimSpace(os.Getenv("ETHEREUM_NETWORK"))
+	if ethereumNetwork == "" {
+		fmt.Println("ETHEREUM_NETWORK environment variable not set")
+		os.Exit(1)
+	}
+
+	ethereumWithdrawalAddress := strings.TrimSpace(os.Getenv("ETHEREUM_WITHDRAWAL_ADDRESS"))
+	if ethereumWithdrawalAddress == "" {
+		fmt.Println("ETHEREUM_WITHDRAWAL_ADDRESS environment variable not set")
+		os.Exit(1)
+	}
+
+	stakeAmountGweiStr := "32000000000" // 32ETH denominated in Gwei
+
+	// * BuilderVault mTLS authentication with publickey pinning: https://builder-vault-tsm.docs.blockdaemon.com/docs/authentication-3#public-key-pinning
+
+	// The TLS public keys of MPC nodes
+	var serverMtlsPublicKeys = map[int]string{
+		0: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaWLFxRxgLQHJ662gcd2LfPFYKDmI\n8AlzFUu/MFR0Pb5d0JYSBL/HAUR5/1OXfEV18riJZJCeOa1gxNocwzqZ9Q==\n-----END PUBLIC KEY-----\n",
+		1: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErPzIZwRgiFpBgIDYCzfRxEgvasus\nHa4qlwWnJ0TnlGgjcfD5Bp40J9HnOdlBkzhtVWq5PiLEMaFWdApTkRBT9Q==\n-----END PUBLIC KEY-----\n",
+	}
+
+	// Decode server public keys to bytes for use in TLS client authentication
+	serverPKIXPublicKeys := make([][]byte, len(serverMtlsPublicKeys))
+	for i := range serverMtlsPublicKeys {
+		block, rest := pem.Decode([]byte(serverMtlsPublicKeys[i]))
+		if block == nil || len(rest) != 0 {
+			panic("error decoding server public key (no block data)")
+		}
+		serverPublicKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			panic(err)
+		}
+		serverPKIXPublicKeys[i], err = x509.MarshalPKIXPublicKey(serverPublicKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Create TSM SDK clients with mTLS authentication and public keys
+	clients := make([]*tsm.Client, len(serverMtlsPublicKeys))
+	for i := range clients {
+		config, err := tsm.Configuration{URL: fmt.Sprintf("https://tsm-sandbox.prd.wallet.blockdaemon.app:%v", 8080+i)}.WithMTLSAuthentication("./client.key", "./client.crt", serverPKIXPublicKeys[i])
+		if err != nil {
+			panic(err)
+		}
+		clients[i], err = tsm.NewClient(config)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	threshold := 1 // * The security threshold for this key https://builder-vault-tsm.docs.blockdaemon.com/docs/security-overview#security-model
+
+	masterKeyID := getKeyID(clients, threshold, "key.txt")
+
+	// Get the public key for the derived key m/44/60
+
+	chainPath := []uint32{44, 60}
+	pkixPublicKeys := make([][]byte, len(clients))
+	for i, client := range clients {
+		var err error
+		pkixPublicKeys[i], err = client.ECDSA().PublicKey(context.TODO(), masterKeyID, chainPath)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Validate public keys
+
+	for i := 1; i < len(pkixPublicKeys); i++ {
+		if bytes.Compare(pkixPublicKeys[0], pkixPublicKeys[i]) != 0 {
+			panic("public keys do not match")
+		}
+	}
+	pkixPublicKey := pkixPublicKeys[0]
+
+	// Convert the public key into an Ethereum address
+
+	publicKeyBytes, err := tsmutils.PKIXPublicKeyToUncompressedPoint(pkixPublicKey)
+	if err != nil {
+		panic(err)
+	}
+
+	ecdsaPub, err := crypto.UnmarshalPubkey(publicKeyBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	address := crypto.PubkeyToAddress(*ecdsaPub)
+	fmt.Println("Ethereum address of derived key m/44/60:", address)
+
+	// * Using Blockdaemon RPC API for Ethereum: https://docs.blockdaemon.com/reference/how-to-access-ethereum-api
+	// Initialize go-ethereum client
+
+	ethereumNodeURL := fmt.Sprintf("https://svc.blockdaemon.com/ethereum/%s/native?apiKey=%s", ethereumNetwork, apiKey)
+	ethClient, err := ethclient.Dial(ethereumNodeURL)
+	if err != nil {
+		panic(err)
+	}
+
+	// Define stake intent request
+	stakeRequest := &Request{
+		Stakes: []Stake{
+			{
+				Amount:            stakeAmountGweiStr,
+				WithdrawalAddress: ethereumWithdrawalAddress,
+				FeeRecipient:      ethereumWithdrawalAddress,
+			},
+		},
+	}
+
+	// Check balance at m/42/5
+
+	balance, err := ethClient.BalanceAt(context.TODO(), address, nil)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Balance at account m/44/60", address, ":", balance, "Wei")
+
+	// convert Gwei String to Wei BigInt
+
+	stakeAmountWeiStr := stakeAmountGweiStr + "000000000"
+	stakeAmountWeiInt, ok := new(big.Int).SetString(stakeAmountWeiStr, 10)
+	if !ok {
+		panic("error converting amountWeiStr to big.Int")
+	}
+	if stakeAmountWeiInt.Cmp(balance) > 0 {
+		fmt.Println()
+		fmt.Println("Insufficient funds.")
+		fmt.Println("Insert additional funds at address", address, ", e.g. by visiting https://holesky-faucet.pk910.de")
+		fmt.Println("Then run this program again.")
+		os.Exit(0)
+	}
+
+	// Create stake intent and receive transaction data
+	txData, contractAddress, totalAmount := createStakeIntent(stakeApiKey, stakeRequest, ethereumNetwork)
+
+	// Craft transaction with stake intent unsigned tx data and blockchain inputs
+	unsignedTx, unsignedTxHash, chainID := craftTx(ethClient, address, contractAddress, totalAmount, txData)
+
+	// Sign the transaction with MPC wallet private key shares
+	signature := signTx(unsignedTxHash, clients, masterKeyID, chainPath)
+
+	// Broadcast the transaction to the blockchain
+	txHash := sendTx(ethClient, chainID, unsignedTx, signature)
+	fmt.Printf("\nBroadcasted transaction hash: https://%s.etherscan.io/tx/%s\n", ethereumNetwork, txHash)
+}
+
+func createStakeIntent(stakeApiKey string, stakeRequest *Request, ethereumNetwork string) (string, string, *big.Int) {
+
+	// * Create a stake intent with the Staking Integration API: https://docs.blockdaemon.com/reference/postethereumstakeintent
+
 	requestJson, _ := json.Marshal(stakeRequest)
 
 	fmt.Println("\nStake API request:\n", structs.Map(stakeRequest))
 
-	req, _ := http.NewRequest("POST", "https://svc.blockdaemon.com/boss/v1/ethereum/holesky/stake-intents", bytes.NewBuffer(requestJson))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("https://svc.blockdaemon.com/boss/v1/ethereum/%s/stake-intents", ethereumNetwork), bytes.NewBuffer(requestJson))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-API-Key", stakeApiKey)
-	//req.Header.Set("Idempotency-Key", "45C8C466-6EC6-4C8F-9C88-7B928AFF9A5F")
+	//req.Header.Set("Idempotency-Key", "DA5C8D68-9283-4D57-9EF0-1A9F33DC8E70")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -85,34 +271,24 @@ func createStakeIntent(stakeApiKey string, stakeRequest *Request) (string, strin
 	return stakeResponse.Ethereum.UnsignedTransaction, stakeResponse.Ethereum.ContractAddress, totalAmount
 }
 
-// ! Craft transaction
-func craftTx(client *ethclient.Client, ethereumSenderAddress string, contractAddress string, totalAmount *big.Int, txData string) (*types.Transaction, []byte, *big.Int) {
-	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(ethereumSenderAddress))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	chainID, err := client.ChainID(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
+func craftTx(client *ethclient.Client, address common.Address, contractAddress string, totalAmount *big.Int, txData string) (*types.Transaction, []byte, *big.Int) {
+	nonce, _ := client.PendingNonceAt(context.Background(), address)
+	gasPrice, _ := client.SuggestGasPrice(context.Background())
+	chainID, _ := client.ChainID(context.Background())
+	gasTipCap, _ := client.SuggestGasTipCap(context.TODO())
+	gasFeeCap, _ := client.SuggestGasPrice(context.TODO())
 
 	decodedContactAddress := common.HexToAddress(contractAddress)
 
-	msg := ethereum.CallMsg{
-		From:     common.HexToAddress(ethereumSenderAddress),
+	callMsg := ethereum.CallMsg{
+		From:     address,
 		To:       &decodedContactAddress,
 		GasPrice: gasPrice,
 		Value:    totalAmount,
 		Data:     common.FromHex(txData),
 	}
 
-	gasLimit, err := client.EstimateGas(context.Background(), msg)
+	gasLimit, err := client.EstimateGas(context.Background(), callMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,8 +299,8 @@ func craftTx(client *ethclient.Client, ethereumSenderAddress string, contractAdd
 		To:        &decodedContactAddress,
 		Value:     totalAmount,
 		Gas:       gasLimit,
-		GasTipCap: big.NewInt(2 * 1e9),  // 2 Gwei
-		GasFeeCap: big.NewInt(40 * 1e9), // 40 Gwei
+		GasTipCap: gasTipCap,
+		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(txData),
 	})
 
@@ -134,45 +310,39 @@ func craftTx(client *ethclient.Client, ethereumSenderAddress string, contractAdd
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\nCrafted unsigned transaction (hex encoded): 0x%x", raw)
+	fmt.Printf("\nCrafted unsigned transaction (hex encoded): 0x%x\n", raw)
 
-	// create a NewLondonSigner for EIP 1559 transactions
-	signer := types.NewLondonSigner(chainID)
+	// create a NewCancunSigner for EIP 1559 transactions
+	signer := types.NewCancunSigner(chainID)
 
 	return unsignedTx, signer.Hash(unsignedTx).Bytes(), chainID
 }
 
-// ! Sign transaction
-func signTx(unsignedTxHash []byte) []byte {
-	// Create clients for each of the nodes
+func signTx(unsignedTxHash []byte, clients []*tsm.Client, masterKeyID string, chainPath []uint32) []byte {
 
-	configs := []*tsm.Configuration{
-		tsm.Configuration{URL: "https://node-1-prod.tsm-test-greg.dev.wallet.blockdaemon.app"}.WithAPIKeyAuthentication(os.Getenv("BV_NODE1_KEY")),
-		tsm.Configuration{URL: "https://node-2-prod.tsm-test-greg.dev.wallet.blockdaemon.app"}.WithAPIKeyAuthentication(os.Getenv("BV_NODE2_KEY")),
-	}
+	fmt.Println("Signing transaction hash using Builder Vault...")
 
-	clients := make([]*tsm.Client, len(configs))
-	for i, config := range configs {
-		var err error
-		if clients[i], err = tsm.NewClient(config); err != nil {
+	playerPubkeys := map[int][]byte{}
+	playerIds := []int{0, 1}
+	// iterate over other players public keys and convert them
+	for i := range playerIds {
+		pubkey, err := base64.StdEncoding.DecodeString(playerB64Pubkeys[i])
+		if err != nil {
 			panic(err)
 		}
+		playerPubkeys[playerIds[i]] = pubkey
 	}
-
-	// Use the TSM to sign via the existing derived key for chain m/44/60
-	keyID := "r6mMzrh85Oel0QvpT0VsXdKJs9A4"
-	derivationPath := []uint32{44, 60, 0, 0}
+	//signPlayers := []int{1, 2}
+	signSessionConfig := tsm.NewSessionConfig(tsm.GenerateSessionID(), playerIds, playerPubkeys)
 
 	partialSignaturesLock := sync.Mutex{}
 	var partialSignatures [][]byte
-	signPlayers := []int{1, 2}
-	signSessionConfig := tsm.NewSessionConfig(tsm.GenerateSessionID(), signPlayers, nil)
 	ctx := context.Background()
 	var eg errgroup.Group
 	for _, client := range clients {
 		client := client
 		eg.Go(func() error {
-			partialSignResult, err := client.ECDSA().Sign(ctx, signSessionConfig, keyID, derivationPath, unsignedTxHash)
+			partialSignResult, err := client.ECDSA().Sign(ctx, signSessionConfig, masterKeyID, chainPath, unsignedTxHash)
 			if err != nil {
 				return err
 			}
@@ -198,15 +368,14 @@ func signTx(unsignedTxHash []byte) []byte {
 	copy(sigBytes[0:32], signature.R())
 	copy(sigBytes[32:64], signature.S())
 	sigBytes[64] = byte(signature.RecoveryID())
-	fmt.Println("\n\nTransaction signature (hex encoded):\n", hex.EncodeToString(sigBytes))
+	fmt.Println("\nTransaction signature (hex encoded):\n", hex.EncodeToString(sigBytes))
 
 	return sigBytes
 }
 
-// ! Broadcast stake deposit to chain
 func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transaction, sigBytes []byte) string {
 
-	signedTx, err := unsignedTx.WithSignature(types.NewLondonSigner(chainID), sigBytes)
+	signedTx, err := unsignedTx.WithSignature(types.NewCancunSigner(chainID), sigBytes)
 	if err != nil {
 		panic(err)
 	}
@@ -215,7 +384,7 @@ func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transa
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("\nSigned raw transaction (RLP encoded): 0x%x", raw)
+	fmt.Printf("\nSigned raw serialized transaction: 0x%x\n", raw)
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
@@ -225,52 +394,65 @@ func sendTx(client *ethclient.Client, chainID *big.Int, unsignedTx *types.Transa
 	return signedTx.Hash().Hex()
 }
 
-func main() {
-	stakeApiKey := os.Getenv("STAKE_API_KEY")
-	rpcApiKey := os.Getenv("RPC_API_KEY")
+func getKeyID(clients []*tsm.Client, threshold int, keyFile string) (keyID string) {
 
-	// ! Define stake intent parameters
-	ethereumSenderAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
-	stakeWithdrawalAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
-	stakeFeeRecipientAddress := "0xE8fE1C1058b34d5152f2B23908dD8c65715F2D3A"
-	stakeAmount := "32000000000" // denominated in Gwei
+	// Read existing or generate a new ECDSA master key
 
-	// Define stake intent request
-	stakeRequest := &Request{
-		Stakes: []Stake{
-			{
-				Amount:            stakeAmount,
-				WithdrawalAddress: stakeWithdrawalAddress,
-				FeeRecipient:      stakeFeeRecipientAddress,
-			},
-		},
+	keyIDBytes, err := os.ReadFile(keyFile)
+	if err == nil {
+		keyID = strings.TrimSpace(string(keyIDBytes))
+		fmt.Println("Read key with ID", keyID, "from file", keyFile)
+		return keyID
 	}
 
-	// Create go-ethereum/rpc client with header-based authentication
-	rpcClient, err := rpc.Dial("https://svc.blockdaemon.com/ethereum/holesky/native")
-	if err != nil {
-		log.Fatal("Failed to connect to the Ethereum client:", err)
+	if !errors.Is(err, os.ErrNotExist) {
+		panic(err)
 	}
-	rpcClient.SetHeader("X-API-KEY", rpcApiKey)
-	client := ethclient.NewClient(rpcClient)
 
-	// Check sender wallet balance available for staking
-	balance, err := client.BalanceAt(context.Background(), common.HexToAddress(ethereumSenderAddress), nil)
+	// * Generate an ECDSA master key: https://builder-vault-tsm.docs.blockdaemon.com/docs/getting-started-demo-tsm-golang
+	playerPubkeys := map[int][]byte{}
+	playerIds := []int{0, 1}
+	// iterate over other players public keys and convert them
+	for i := range playerIds {
+		pubkey, err := base64.StdEncoding.DecodeString(playerB64Pubkeys[i])
+		if err != nil {
+			panic(err)
+		}
+		playerPubkeys[playerIds[i]] = pubkey
+	}
+
+	keyGenPlayers := []int{0, 1}
+	sessionConfig := tsm.NewSessionConfig(tsm.GenerateSessionID(), keyGenPlayers, playerPubkeys)
+	//sessionConfig := tsm.NewStaticSessionConfig(tsm.GenerateSessionID(), len(clients))
+	ctx := context.TODO()
+	masterKeyIDs := make([]string, len(clients))
+	var eg errgroup.Group
+	for i, client := range clients {
+		client, i := client, i
+		eg.Go(func() error {
+			var err error
+			masterKeyIDs[i], err = client.ECDSA().GenerateKey(ctx, sessionConfig, threshold, ec.Secp256k1.Name(), "")
+			return err
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		panic(err)
+	}
+
+	for i := 1; i < len(masterKeyIDs); i++ {
+		if masterKeyIDs[0] != masterKeyIDs[i] {
+			panic("key IDs do not match")
+		}
+	}
+	keyID = masterKeyIDs[0]
+
+	fmt.Println("Generated master key (m) with ID", keyID, "; saving to file", keyFile)
+
+	err = os.WriteFile(keyFile, []byte(keyID+"\n"), 0644)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Balance at account:", ethereumSenderAddress, "=", (balance), "wei")
 
-	// ! Create stake intent and receive transaction data
-	txData, contractAddress, totalAmount := createStakeIntent(stakeApiKey, stakeRequest)
+	return keyID
 
-	// ! Craft transaction with stake intent unsigned tx data and blockchain inputs
-	unsignedTx, unsignedTxHash, chainID := craftTx(client, ethereumSenderAddress, contractAddress, totalAmount, txData)
-
-	// ! Sign the transaction with MPC wallet private key shares
-	signature := signTx(unsignedTxHash)
-
-	// ! Broadcast the transaction to the blockchain
-	txHash := sendTx(client, chainID, unsignedTx, signature)
-	fmt.Println("\nBroadcasted transaction hash:", txHash)
 }

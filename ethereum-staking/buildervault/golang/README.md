@@ -1,5 +1,5 @@
 
-## Sample go staking app demo
+# Golang Ethereum staking with Builder Vault wallet
 
 
 ```mermaid
@@ -24,35 +24,34 @@ sequenceDiagram
     StakeClient ->> Blockchain: broadcast signed tx<br>(signed tx, deposit contract)
 ```
 
-<!--
+### Prerequisites
+  - [Golang](https://go.dev/doc/install) or launch in [code-spaces](https://codespaces.new/Blockdaemon/demo-buildervault-stakingAPI?quickstart=1)
+  - Register for a demo Builder Vault tenant: https://www.blockdaemon.com/get-started/builder-vault-sandbox-registration
+    - Download SDK bundle provided in registration email (extract authentication certificates)
+    - Place Builder Vault authentication certificate key-pair `client.crt` & `client.key` in this nodejs folder
+  - Register for free Blockdaemon [RPC API key](https://docs.blockdaemon.com/reference/get-started-rpc#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_API_KEY
+  - Register for free Blockdaemon [Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_STAKE_API_KEY
 
-# Get Plans
-http -b GET https://svc.blockdaemon.com/boss/v1/plans \
-  X-API-KEY:$STAKE_API_KEY
-
-# Post Intent
-http -b POST https://svc.blockdaemon.com/boss/v1/ethereum/holesky/stake-intents \
-  X-API-KEY:$STAKE_API_KEY \
-  accept:application/json \
-  content-type:application/json \
-  stakes:='[{"amount":"32000000000","withdrawal_address":"0x00000000219ab540356cBB839Cbe05303d7705Fa","fee_recipient":"0x93247f2209abcacf57b75a51dafae777f9dd38bc"}]'
-
-# Get Intents
-http -b GET https://svc.blockdaemon.com/boss/v1/stake-intents?protocols=ethereum&networks=holesky \
-  X-API-KEY:$STAKE_API_KEY 
+### Step 1. Set environment variables in .env
+```shell
+cd ethereum-staking/buildervault/golang/
+cp .env.example .env
 ```
+- update .env with API keys
 
-sequenceDiagram
-    autonumber
-    participant StakeClient as Sample stake<br> client application
-    participant StakeAPI as Stake Intent API
-    participant Blockchain as Blockchain
-    participant TSM as Sender Wallet Vault<br>(private key)
+### Step 2. Launch main.go to auto-create the Builder Vault wallet address on first run
+```shell
+go run main.go
+```
+- note, on first run this step will fail as the wallet address has no funds
+- copy the new Ethereum wallet address and fund the account
 
-    StakeClient ->> StakeAPI: get StakeIntent unsigned tx data <br>(amount, withdrawal & recipient address)
-    StakeClient ->> Blockchain: get blockchain inputs for new tx<br>(gas fee, chainID, sender wallet nonce)
-    StakeClient ->> StakeClient: construct unsigned tx
-    StakeClient ->> TSM: request signature of unsigned tx
-    TSM ->> StakeClient: return tx signature
-    StakeClient ->> Blockchain: broadcast signed tx<br>(signed tx, deposit contract)
---!>
+### Step 3. Fund the new Ethereum wallet address with 33 ETH using faucets below
+  - https://holesky-faucet.pk910.de/#/
+
+### Step 4. Launch main.go to generate the Stake Intent request, sign the request with BuilderVault and broadcast the transaction
+```shell
+go run main.go
+```
+- (optional) decode the raw unsigned transaction to inspect the Blockdaemon provided attributes (https://rawtxdecode.in)
+- observe the confirmed transaction through the generated blockexplorer link
