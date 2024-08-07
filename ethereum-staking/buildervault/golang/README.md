@@ -53,5 +53,5 @@ go run main.go
 ```shell
 go run main.go
 ```
-- (optional) decode the raw unsigned transaction to inspect the Blockdaemon provided attributes (https://rawtxdecode.in)
+- (optional) decode the raw signed transaction to inspect the Blockdaemon provided attributes (https://rawtxdecode.in)
 - observe the confirmed transaction through the generated blockexplorer link
