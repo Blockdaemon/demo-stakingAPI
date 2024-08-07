@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/fatih/structs v1.1.0
+	github.com/joho/godotenv v1.5.1
 	gitlab.com/Blockdaemon/go-tsm-sdkv2 v0.0.0-20240227205306-65d60d978f8d
 	golang.org/x/sync v0.6.0
 )
@@ -24,7 +25,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/supranational/blst v0.3.11 // indirect

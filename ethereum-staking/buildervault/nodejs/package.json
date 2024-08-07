@@ -1,7 +1,18 @@
 {
   "dependencies": {
+    "@sepior/tsmsdkv2": "^63.0.0",
+    "asn1.js": "^5.4.1",
     "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
     "web3": "^4.11.1",
     "web3-eth-accounts": "^4.1.3"
-  }
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning --loader ts-node/esm"
+  },
+  "exclude": [
+    "node_modules"
+  ]
 }

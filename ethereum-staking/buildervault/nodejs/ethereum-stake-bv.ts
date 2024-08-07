@@ -37,6 +37,8 @@ function createStakeIntent(
   bossApiKey: string,
   request: CreateStakeIntentRequest,
 ): Promise<CreateStakeIntentResponse> {
+
+	// * Create a stake intent with the Staking Integration API: https://docs.blockdaemon.com/reference/postethereumstakeintent
   const requestOptions = {
     method: 'POST',
     headers: {
@@ -49,7 +51,7 @@ function createStakeIntent(
   };
 
   return fetch(
-    'https://svc.blockdaemon.com/boss/v1/ethereum/holesky/stake-intents',
+    `https://svc.blockdaemon.com/boss/v1/ethereum/${process.env.ETHEREUM_NETWORK}/stake-intents`,
     requestOptions,
   ).then(response => response.json() as Promise<CreateStakeIntentResponse>);
 }
@@ -84,6 +86,7 @@ async function main() {
 
   // Set buildervault endpoints
 
+	// * BuilderVault mTLS authentication with publickey pinning: https://builder-vault-tsm.docs.blockdaemon.com/docs/authentication-3#public-key-pinning
   const serverMtlsPublicKeys = {
     0: `-----BEGIN CERTIFICATE-----\nMIICMTCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MDIxMzE3MjE0OFoXDTI5MDIxMzE3MjE0OFowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGlixcUc\nYC0ByeutoHHdi3zxWCg5iPAJcxVLvzBUdD2+XdCWEgS/xwFEef9Tl3xFdfK4iWSQ\nnjmtYMTaHMM6mfWjUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSAAwRQIgSDKHZmsnylzL8kopFSeo8L6LQGxyd/NsBRb+8STI\n1cECIQChi4cl5nJgTXCBzJEHicnRk/0vl+9zq6iABMV+KTXJxA==\n-----END CERTIFICATE-----`,
     1: `-----BEGIN CERTIFICATE-----\nMIICMjCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MDIxMzE3MjEzMloXDTI5MDIxMzE3MjEzMlowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKz8yGcE\nYIhaQYCA2As30cRIL2rLrB2uKpcFpydE55RoI3Hw+QaeNCfR5znZQZM4bVVquT4i\nxDGhVnQKU5EQU/WjUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSQAwRgIhAO9yXpssqar6IdgmEOIfAsha0ZIWG56nwE8/GbyN\nBiTaAiEAhhEClrSm/TzmWxODXamBz0pmQ9qNFsrtbGsDhLOe8O8=\n-----END CERTIFICATE-----`,
@@ -104,7 +107,7 @@ async function main() {
     await TSMClient.withConfiguration(config1),
   ];
 
-  const threshold = 1; // The security threshold for this key
+  const threshold = 1; // * The security threshold for this key https://builder-vault-tsm.docs.blockdaemon.com/docs/security-overview#security-model
 
   const masterKeyId = await getKeyId(clients, threshold, "key.txt");
 
@@ -174,7 +177,8 @@ async function main() {
   const totalDepositAmount =
     stakes.reduce((sum, next) => sum + BigInt(next.amount), 0n) * gwei;
 
-  const web3 = new Web3(`https://svc.blockdaemon.com/ethereum/holesky/native?apiKey=${process.env.BLOCKDAEMON_API_KEY}`);
+	// * Using Blockdaemon RPC API for Ethereum: https://docs.blockdaemon.com/reference/how-to-access-ethereum-api
+  const web3 = new Web3(`https://svc.blockdaemon.com/ethereum/${process.env.ETHEREUM_NETWORK}/native?apiKey=${process.env.BLOCKDAEMON_API_KEY}`);
 
   // log initial balances
   console.log("Initial balance:", await web3.eth.getBalance(address));
@@ -201,18 +205,14 @@ async function main() {
   console.log('Transaction Hash:', web3.utils.toHex(txHash));
   const {r,s,v} = await signTx(txHash, clients, masterKeyId, chainPath);
 
-  const signedTransaction = transaction._processSignature(v, web3.utils.hexToBytes(r), web3.utils.hexToBytes(s));
-
-  console.log('Get Sender Address:', signedTransaction.getSenderAddress().toString());
-  console.log('Get Sender pk:', web3.utils.bytesToHex(signedTransaction.getSenderPublicKey()));
+  const signedTransaction = transaction._processSignature(v.valueOf(), web3.utils.hexToBytes(r), web3.utils.hexToBytes(s));
 
   const serializeTx = TransactionFactory.fromTxData(signedTransaction).serialize();
   console.log('Signed Transaction:', web3.utils.toHex(serializeTx));
-  const txReceipt = await web3.eth.sendSignedTransaction(serializeTx)
+  const txReceipt = await web3.eth.sendSignedTransaction(serializeTx);
 
-  console.log(txReceipt);
+  console.log(`Broadcasted transaction hash: https://${process.env.ETHEREUM_NETWORK}.etherscan.io/tx/${txReceipt.transactionHash}`);
 }
-
 
 
 async function signTx(
@@ -224,13 +224,30 @@ async function signTx(
   
 
     console.log(`Builder Vault signing transaction hash...`);
+  
+    // ToDo: Change to newStaticSessionConfig once TSM nodes are publically signed
+
+    // The public keys of the other players to encrypt MPC protocol data end-to-end
+    const playerB64Pubkeys = [
+      "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtDFBfanInAMHNKKDG2RW/DiSnYeI7scVvfHIwUIRdbPH0gBrsilqxlvsKZTakN8om/Psc6igO+224X8T0J9eMg==",
+      "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqvSkhonTeNhlETse8v3X7g4p100EW9xIqg4aRpD8yDXgB0UYjhd+gFtOCsRT2lRhuqNForqqC+YnBsJeZ4ANxg==",
+    ];
+
+    const playerPubkeys = [];
+    const playerIds = new Uint32Array(Array(clients.length).fill(0).map((_, i) => i));
+    for (const i of playerIds) {
+      const pubkey = Buffer.from(playerB64Pubkeys[i], "base64");
+      playerPubkeys.push(pubkey);
+    }
+
+    const sessionConfig = await SessionConfig.newSessionConfig(await SessionConfig.GenerateSessionID(),  playerIds, playerPubkeys);
+
+    // const sessionConfig = await SessionConfig.newStaticSessionConfig(
+    //   await SessionConfig.GenerateSessionID(),
+    //   clients.length
+    // );
 
     const partialSignatures: string[] = [];
-  
-    const sessionConfig = await SessionConfig.newStaticSessionConfig(
-      await SessionConfig.GenerateSessionID(),
-      clients.length
-    );
   
     const partialSignaturePromises: Promise<void>[] = [];
   
@@ -312,7 +329,8 @@ async function getKeyId(
   //   await SessionConfig.GenerateSessionID(),
   //   clients.length
   // );
-  
+
+  // * Generate an ECDSA master key: https://builder-vault-tsm.docs.blockdaemon.com/docs/getting-started-demo-tsm-golang
   const masterKeyIds: string[] = [];
 
   clients.forEach(() => masterKeyIds.push(""));
