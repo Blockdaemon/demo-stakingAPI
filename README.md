@@ -10,4 +10,5 @@ To get started, click on the links for installation and usage instructions.
 ## Ethereum Staking
 - [Stake deposit from Builder Vault wallet with Golang SDK](./ethereum-staking/buildervault/golang/README.md)
 - [Stake deposit from Builder Vault wallet with TypeScript SDK](./ethereum-staking/buildervault/nodejs/README.md)
+- [Stake deposit from Fireblocks wallet with TypeScript SDK](./ethereum-staking/fireblocks/nodejs/README.md)
 
