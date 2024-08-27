@@ -30,29 +30,16 @@ sequenceDiagram
 cd solana-staking/fireblocks/nodejs/
 cp .env.example .env
 ```
-- update .env with API keys
+- update .env with API keys, Fireblocks Vault ID
 
 ### Step 2. Install package dependancies
 ```shell
 npm install
 ```
 
-### Step 3. Launch solana-stake-fb.ts to auto-create the Builder Vault wallet address on first run
+### Step 3. Launch solana-stake-fb.ts to generate the Stake Intent request, sign the request with Fireblocks and broadcast the transaction
 ```shell
 npm run start solana-stake-fb.ts
 ```
-- note, on first run this step will fail as the wallet address has no funds
-- copy the new Solana wallet address and fund the account
-
-### Step 4. Fund the new Solana wallet address with 2 SOL using faucets below
-  - https://solfaucet.com
-  - https://faucet.triangleplatform.com/solana/testnet
-  - https://faucet.quicknode.com/solana/testnet
-  - https://solfate.com/faucet
-
-### Step 5. Launch solana-stake-fb.ts to generate the Stake Intent request, sign the request with BuilderVault and broadcast the transaction
-```shell
-npm run start solana-stake-fb.ts
-```
-- [optional] view the signed transaction contents with inspector: https://explorer.solana.com/tx/inspector?cluster=testnet
+- [optional] view the signed transaction contents with inspector: https://explorer.solana.com/tx/inspector
 - observe the confirmed transaction through the generated blockexplorer link

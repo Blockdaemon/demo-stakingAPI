@@ -2,8 +2,13 @@
   "dependencies": {
     "@fireblocks/ts-sdk": "^3.1.0",
     "@solana/web3.js": "^1.95.2",
-    "bs58": "^6.0.0",
-    "crypto": "^1.0.1",
-    "fs": "^0.0.1-security"
-  }
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "ts-node": "^10.9.2"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning --loader ts-node/esm"
+  },
+  "exclude": ["node_modules"]
 }
