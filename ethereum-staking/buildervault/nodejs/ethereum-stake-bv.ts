@@ -254,7 +254,7 @@ async function signTx(
     for (const [_, client] of clients.entries()) {
       const func = async (): Promise<void> => {
         const ecdsaApi = client.ECDSA();
-  
+        console.log(`Creating partialSignature with MPC player ${_}...`);
         const partialSignResult = await ecdsaApi.sign(
           sessionConfig,
           masterKeyId,
@@ -340,7 +340,7 @@ async function getKeyId(
   for (const [i, client] of clients.entries()) {
     const func = async (): Promise<void> => {
       const ecdsaApi = client.ECDSA();
-
+      console.log(`Generating key using MPC player ${i}`);
       masterKeyIds[i] = await ecdsaApi.generateKey(
         sessionConfig,
         threshold,

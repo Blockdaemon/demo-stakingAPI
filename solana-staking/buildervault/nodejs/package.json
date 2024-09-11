@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "@sepior/tsmsdkv2": "^63.0.0",
+    "@sepior/tsmsdkv2": "^65.0.0",
     "@solana/web3.js": "^1.95.1",
     "@types/node": "^20.14.12",
     "bs58": "^6.0.0",

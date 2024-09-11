@@ -32,7 +32,7 @@ function createStakeIntent(
   request: CreateStakeIntentRequest,
 ): Promise<CreateStakeIntentResponse> {
 
-	// * Create a stake intent with the Staking Integration API: https://docs.blockdaemon.com/reference/postethereumstakeintent
+  // * Create a stake intent with the Staking Integration API: https://docs.blockdaemon.com/reference/postethereumstakeintent
   const requestOptions = {
     method: 'POST',
     headers: {
@@ -84,14 +84,14 @@ async function main() {
   }
 
   // Determine FIreblocks Asset ID based on network
-  const fireblocks_asset_id = process.env.ETHEREUM_NETWORK === "holesky" ? ChainId.HOLESKY : ChainId.MAINNET;
+  const chainID = process.env.ETHEREUM_NETWORK === "holesky" ? ChainId.HOLESKY : ChainId.MAINNET;
 
   const eip1193Provider = new FireblocksWeb3Provider({
     apiBaseUrl: ApiBaseUrl.Production,
     privateKey: readFileSync(process.env.FIREBLOCKS_SECRET_KEY, "utf8"),
     apiKey: process.env.FIREBLOCKS_API_KEY,
     vaultAccountIds: process.env.FIREBLOCKS_VAULT_ACCOUNT_IDS,
-    chainId: fireblocks_asset_id,
+    chainId: chainID,
   });
 
   const web3 = new Web3(eip1193Provider);

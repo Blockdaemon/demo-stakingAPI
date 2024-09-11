@@ -6,7 +6,7 @@ import fs from "fs";
 import crypto from "crypto";
 import 'dotenv/config'
 
-export type StakeIntentSolanaRequest = {
+export type StakeIntentRequest = {
   amount: string;
   validator_address: string;
   delegator_address: string;
@@ -15,21 +15,19 @@ export type StakeIntentSolanaRequest = {
   plan_id?: string;
 };
 
-export type StakeIntentSolana = {
-  stake_id: string;
-  amount: string;
-  validator_public_key: string;
-  staking_authority: string;
-  withdrawal_authority: string;
-  stake_account_public_key: string;
-  unsigned_transaction: string;
-};
-
 export type StakeIntentResponce = {
   stake_intent_id: string;
   protocol: string;
   network: string;
-  solana?: StakeIntentSolana;
+  solana: {
+    stake_id: string;
+    amount: string;
+    validator_public_key: string;
+    staking_authority: string;
+    withdrawal_authority: string;
+    stake_account_public_key: string;
+    unsigned_transaction: string;
+  };
   customer_id?: string;
 };
 
@@ -168,7 +166,7 @@ async function main() {
 // Function for creating a stake intent with the Staking Integration API
 function createStakeIntent(
   bossApiKey: string,
-  request: StakeIntentSolanaRequest,
+  request: StakeIntentRequest,
 ): Promise<StakeIntentResponce>  {
   const requestOptions = {
     method: 'POST',
@@ -234,6 +232,7 @@ async function signTx(
   for (const [_, client] of clients.entries()) {
     const func = async (): Promise<void> => {
       const eddsaApi = client.Schnorr();
+      console.log(`Creating partialSignature with MPC player ${_}...`);
 
       const partialSignResult = await eddsaApi.sign(
         sessionConfig,
@@ -257,20 +256,6 @@ async function signTx(
     partialSignatures
   );
 
-  // Verify the signature relative to the signed message and the public key
-
-  // try {
-  //   const result = await eddsaApi.verifySignature(
-  //       publickeys[0],
-  //       messageToSign,
-  //       signature.signature
-  //   );
-  //   console.log(
-  //       `Signature: ${Buffer.from(signature.signature).toString("hex")}`
-  //   );
-  // } catch (e) {
-  //     console.log(e);
-  // }
   return signature.signature;
 }
 
@@ -320,7 +305,7 @@ async function getKeyId(
   for (const [i, client] of clients.entries()) {
     const func = async (): Promise<void> => {
       const eddsaApi = client.Schnorr();
-
+      console.log(`Generating key using MPC player ${i}`);
       masterKeyIds[i] = await eddsaApi.generateKey(sessionConfig, threshold, curves.ED25519,"");
     };
 

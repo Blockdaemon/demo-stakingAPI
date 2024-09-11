@@ -30,7 +30,6 @@ sequenceDiagram
     - Place Builder Vault authentication certificate key-pair `client.crt` & `client.key` in this nodejs folder
   - Register for free Blockdaemon [RPC API key](https://docs.blockdaemon.com/reference/get-started-rpc#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_API_KEY
   - Register for free Blockdaemon [Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_STAKE_API_KEY
-  - Speak to your CSM about getting credentials to the Blockdaemon nexus.sepior.net repo for the nodejs SDK.
 
 ### Step 1. Set environment variables in .env
 ```shell
@@ -40,11 +39,9 @@ cp .env.example .env
 - update .env with API keys
 
 ### Step 2. Install package dependancies
-- replace NEXUS_USERNAME & NEXUS_PASSWORD with credential provided by your CSM
+- set the public NPM repository for the BuilderVault Node.js SDK
 ```shell
-npm config set @sepior:registry=https://nexus.sepior.net/repository/sepior-nodejs-tsm-sdk-group/
-npm config set //nexus.sepior.net/repository/sepior-nodejs-tsm-sdk-group/:username=NEXUS_USERNAME
-npm config set //nexus.sepior.net/repository/sepior-nodejs-tsm-sdk-group/:\_password=`echo -n 'NEXUS_PASSWORD' | base64`
+npm config set @sepior:registry=https://gitlab.com/api/v4/projects/56306653/packages/npm/
 npm install
 ```
 
