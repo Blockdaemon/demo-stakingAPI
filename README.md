@@ -4,7 +4,7 @@ This repository contains multiple applications. Below are the links to the indiv
 To get started, click on the links for installation and usage instructions.
 
 ## Solana Staking
-- [Stake deposit from Builder Vault wallet with TypeScript SDK](./solana-staking/buildervault/nodejs/README.md)
+- [Stake deposit from Builder Vault wallet with TypeScript SDK](./solana-staking/buildervault/nodejs/README.md)   -   [(video clip)](./media/solana-staking-with-buildervault-wallet-using-typescript.mp4)
 - [Stake deposit from Fireblocks wallet with TypeScript SDK](./solana-staking/fireblocks/nodejs/README.md)
 
 ## Ethereum Staking
