@@ -20,8 +20,9 @@ sequenceDiagram
 ### Prerequisites
   - [Node.js](https://nodejs.org/en/download/package-manager) or launch in [code-spaces](https://codespaces.new/Blockdaemon/demo-buildervault-stakingAPI?quickstart=1)
   - Create Fireblocks [API and Secret key](https://developers.fireblocks.com/docs/manage-api-keys) for use with the [Fireblocks Web3 provider](https://github.com/fireblocks/fireblocks-web3-provider)
-  - Register free Blockdaemon [RPC API key](https://docs.blockdaemon.com/reference/get-started-rpc#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_API_KEY
-  - Register free Blockdaemon [Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_STAKE_API_KEY
+  - Ensure you have a Fireblocks Transaction Policy that permits Contract Calls for your Ethereum vault [Fireblocks TAP](https://developers.fireblocks.com/reference/configure-transaction-authorization-policy#tap-examples)
+  - Should you wish to allow-list the contracts, the Blockdaemon Ethereum Batch Deposit addresses are Mainnet:`0x3F124C700fb5E741F128e28985267D44f56B242F` and Holesky:`0x0b6E07c5EAd5596C1f26ca2F6B97050ceC853671`
+  - Register a free Blockdaemon [Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_STAKE_API_KEY
 
 ### Step 1. Set environment variables in .env
 ```shell

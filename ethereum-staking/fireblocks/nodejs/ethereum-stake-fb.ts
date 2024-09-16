@@ -39,7 +39,7 @@ function createStakeIntent(
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-API-Key': bossApiKey,
-      'Idempotency-Key': 'FB81DEED-D58B-4948-B51D-99E2E1064B9C',
+      //'Idempotency-Key': 'FB81DEED-D58B-4948-B51D-99E2E1064B9C',
     },
     body: JSON.stringify(request),
   };
@@ -55,10 +55,6 @@ async function main() {
   const gwei = 10n ** 9n;
 
   // Check for the required environment variables
-  if (!process.env.BLOCKDAEMON_API_KEY) {
-    throw new Error('BLOCKDAEMON_API_KEY environment variable not set');
-  }
-
   if (!process.env.BLOCKDAEMON_STAKE_API_KEY) {
     throw new Error('BLOCKDAEMON_STAKE_API_KEY environment variable not set');
   }
