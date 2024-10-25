@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@fireblocks/ts-sdk": "^3.1.0",
+    "@cardano-ogmios/client": "^6.1.0",
+    "@emurgo/cardano-serialization-lib-nodejs": "^11.3.1",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "ts-node": "^10.9.2"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning --loader ts-node/esm"
+  },
+  "exclude": ["node_modules"]
+}
