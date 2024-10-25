@@ -24,5 +24,5 @@ npm install
 ```shell
 npm run start cardano-stake-fb.ts
 ```
-- [optional] view the signed transaction contents with inspector: https://explorer.solana.com/tx/inspector
+- [optional] view the signed transaction contents with inspector: https://preprod.cardanoscan.io/
 - observe the confirmed transaction through the generated blockexplorer link
