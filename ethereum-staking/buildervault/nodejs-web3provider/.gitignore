@@ -1,0 +1,8 @@
+*.crt
+*.key
+.vscode
+init
+**/key.txt
+**/.env
+**/node_modules
+/dist/

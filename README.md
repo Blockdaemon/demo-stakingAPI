@@ -8,6 +8,7 @@ To get started, click on the links for installation and usage instructions.
 - [Stake deposit from Fireblocks wallet with TypeScript SDK](./solana-staking/fireblocks/nodejs/README.md)
 
 ## Ethereum Staking
+- [Stake deposit from Builder Vault wallet with Web3 Provider TypeScript SDK](./ethereum-staking/buildervault/nodejs-web3provider/README.md)
 - [Stake deposit from Builder Vault wallet with Golang SDK](./ethereum-staking/buildervault/golang/README.md)
 - [Stake deposit from Builder Vault wallet with TypeScript SDK](./ethereum-staking/buildervault/nodejs/README.md)
 - [Stake deposit from Fireblocks wallet with TypeScript SDK](./ethereum-staking/fireblocks/nodejs/README.md)    -   [(video clip)](https://youtu.be/_6uwwNTh7iQ?feature=shared)
