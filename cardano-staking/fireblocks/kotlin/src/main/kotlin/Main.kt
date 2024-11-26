@@ -251,7 +251,7 @@ fun main() {
     // Call the stake intent function
     try {
         val unsignedTransaction =
-            service.createStakeIntent("addr_test1qplvphyepcs7e3enc4de3ylvj2ururkhy49clr2k27gtqky24wqtjsp5h0udjxm3d8n2f5wh33v2vm4cwtr8grvk7xmsfdhfsk")
+            service.createStakeIntent("ADD-ADDRESS")
         println("Unsigned Transaction: $unsignedTransaction")
 
         val transactionHash = service.decodeAndHashTransaction(unsignedTransaction)
