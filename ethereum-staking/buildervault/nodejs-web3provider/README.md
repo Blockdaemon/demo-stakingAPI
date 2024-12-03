@@ -47,17 +47,18 @@ cp .env.example .env
 ```shell
 npm config set @sepior:registry=https://gitlab.com/api/v4/projects/56306653/packages/npm/   # Builder Vault nodejsSDK public repository
 npm config set @blockdaemon:registry=https://npm.pkg.github.com/
+npm config set //npm.pkg.github.com/:_authToken=YOUR_GITHUB_PAT
 npm install @blockdaemon/buildervault-web3-provider
 ```
 
 ### Step 3. Launch ethereum-stake-bv.ts to determine the BuilderVault wallet address
 ```shell
-ts-node ethereum-stake-bv.ts
+npx ts-node ethereum-stake-bv.ts
 ```
 - if needed, copy the new Ethereum wallet address and fund the account with https://holesky-faucet.pk910.de/#/
 
 ### Step 4. Re-launch ethereum-stake-bv.ts to generate the Stake Intent request, execute the contract with BuilderVault, and broadcast the transaction
 ```shell
-ts-node ethereum-stake-bv.ts
+npx ts-node ethereum-stake-bv.ts
 ```
 - observe the confirmed transaction through the generated blockexplorer link
