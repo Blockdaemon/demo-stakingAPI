@@ -6,3 +6,6 @@ init
 **/.env
 **/node_modules
 */.idea
+
+./cardano-staking/fireblocks/kotlin/build
+./cardano-staking/fireblocks/kotlin/.gradle
