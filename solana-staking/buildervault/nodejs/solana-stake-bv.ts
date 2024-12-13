@@ -55,18 +55,20 @@ async function main() {
   // * BuilderVault mTLS authentication with publickey pinning: https://builder-vault-tsm.docs.blockdaemon.com/docs/authentication-3#public-key-pinning
 
   const serverMtlsPublicKeys = {
-    0: `-----BEGIN CERTIFICATE-----\nMIICMTCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MDIxMzE3MjE0OFoXDTI5MDIxMzE3MjE0OFowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGlixcUc\nYC0ByeutoHHdi3zxWCg5iPAJcxVLvzBUdD2+XdCWEgS/xwFEef9Tl3xFdfK4iWSQ\nnjmtYMTaHMM6mfWjUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSAAwRQIgSDKHZmsnylzL8kopFSeo8L6LQGxyd/NsBRb+8STI\n1cECIQChi4cl5nJgTXCBzJEHicnRk/0vl+9zq6iABMV+KTXJxA==\n-----END CERTIFICATE-----`,
-    1: `-----BEGIN CERTIFICATE-----\nMIICMjCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MDIxMzE3MjEzMloXDTI5MDIxMzE3MjEzMlowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKz8yGcE\nYIhaQYCA2As30cRIL2rLrB2uKpcFpydE55RoI3Hw+QaeNCfR5znZQZM4bVVquT4i\nxDGhVnQKU5EQU/WjUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSQAwRgIhAO9yXpssqar6IdgmEOIfAsha0ZIWG56nwE8/GbyN\nBiTaAiEAhhEClrSm/TzmWxODXamBz0pmQ9qNFsrtbGsDhLOe8O8=\n-----END CERTIFICATE-----`,
+    0: `-----BEGIN CERTIFICATE-----\nMIICMjCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MTIxMDE0MjQyOVoXDTI5MTIxMDE0MjQyOVowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFyD6P8s\n/asEB/7ERpHxye5cpZXXtRYh299ioHemPdKzpmmYqyKqv4G7leXT4bZsAPwqzG3+\nQRg/8HPJA9a8hW2jUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDSQAwRgIhAJZZITPjl9cZNrM1TPRtYo6+TQZw/Q1SO+3xZ5T5\nedeeAiEAlpVDC79W6ym30J6f3gSvOQOJO30+AsJs8gQycf8KK2A=\n-----END CERTIFICATE-----`,
+    1: `-----BEGIN CERTIFICATE-----\nMIICMDCCAdegAwIBAgICB+MwCgYIKoZIzj0EAwIwgaAxCzAJBgNVBAYTAlVTMRMw\nEQYDVQQIDApDYWxpZm9ybmlhMRQwEgYDVQQHDAtMb3MgQW5nZWxlczEUMBIGA1UE\nCgwLQmxvY2tkYWVtb24xFDASBgNVBAsMC0Jsb2NrZGFlbW9uMRQwEgYDVQQDDAtC\nbG9ja2RhZW1vbjEkMCIGCSqGSIb3DQEJARYVYWRtaW5AYmxvY2tkYWVtb24uY29t\nMB4XDTI0MTIxMDE0MjQ0OVoXDTI5MTIxMDE0MjQ0OVowTjELMAkGA1UEBhMCVVMx\nEzARBgNVBAgTCkNhbGlmb3JuaWExFDASBgNVBAcTC0xvcyBBbmdlbGVzMRQwEgYD\nVQQKEwtCbG9ja2RhZW1vbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDm0QCLd\nOUS/P7tR6mmbUD9CL/qTgRTu76U3oIB5QYGj7lDHo8ngnBknVRoz9q+vsk3HvLXK\nAFAcIHsiYQjPJvujUjBQMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggrBgEF\nBQcDAgYIKwYBBQUHAwEwHwYDVR0jBBgwFoAUW6ouasv5oWo7MZ4ZzlE/mpbDrIMw\nCgYIKoZIzj0EAwIDRwAwRAIgVjSlH7sjQ1yus/A2J4mUh3gGljPQaip7ud4ctxdv\n5hUCIG4gazgsH8T0MOdUFdpJovjcxv2KoMl+xQZmYy/G9Pyb\n-----END CERTIFICATE-----`,
   };
 
   const cert0 = new crypto.X509Certificate(serverMtlsPublicKeys[0]);
   const cert1 = new crypto.X509Certificate(serverMtlsPublicKeys[1]);
 
   const config0 = await new Configuration("https://tsm-sandbox.prd.wallet.blockdaemon.app:8080");
-  await config0.withMTLSAuthentication("./client.key", "./client.crt", cert0.publicKey.export({type: "spki",format: "der"}));
+  await config0.withPublicKeyPinning(cert0.publicKey.export({type: "spki",format: "der"}));
+  await config0.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "");
 
   const config1 = await new Configuration("https://tsm-sandbox.prd.wallet.blockdaemon.app:8081")
-  await config1.withMTLSAuthentication("./client.key", "./client.crt", cert1.publicKey.export({type: "spki",format: "der"}));
+  await config1.withPublicKeyPinning(cert1.publicKey.export({type: "spki",format: "der"}));
+  await config1.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "");
 
   // Create clients for two MPC nodes
   const clients: TSMClient[] = [
@@ -203,7 +205,7 @@ async function signTx(
 
   console.log(`Builder Vault signing transaction hash...`);
 
-  const partialSignatures: string[] = [];
+  const partialSignatures: Uint8Array[] = [];
 
   // ToDo: Change to newStaticSessionConfig once TSM nodes are publically signed
 

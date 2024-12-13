@@ -100,8 +100,8 @@ func main() {
 
 	// The TLS public keys of MPC nodes
 	var serverMtlsPublicKeys = map[int]string{
-		0: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEaWLFxRxgLQHJ662gcd2LfPFYKDmI\n8AlzFUu/MFR0Pb5d0JYSBL/HAUR5/1OXfEV18riJZJCeOa1gxNocwzqZ9Q==\n-----END PUBLIC KEY-----\n",
-		1: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErPzIZwRgiFpBgIDYCzfRxEgvasus\nHa4qlwWnJ0TnlGgjcfD5Bp40J9HnOdlBkzhtVWq5PiLEMaFWdApTkRBT9Q==\n-----END PUBLIC KEY-----\n",
+		0: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXIPo/yz9qwQH/sRGkfHJ7lyllde1\nFiHb32Kgd6Y90rOmaZirIqq/gbuV5dPhtmwA/CrMbf5BGD/wc8kD1ryFbQ==\n-----END PUBLIC KEY-----\n",
+		1: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEObRAIt05RL8/u1HqaZtQP0Iv+pOB\nFO7vpTeggHlBgaPuUMejyeCcGSdVGjP2r6+yTce8tcoAUBwgeyJhCM8m+w==\n-----END PUBLIC KEY-----\n",
 	}
 
 	// Decode server public keys to bytes for use in TLS client authentication
