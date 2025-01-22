@@ -1,8 +1,9 @@
 {
   "dependencies": {
-    "@blockdaemon/buildervault-web3-provider": "^0.0.3",
+    "@blockdaemon/buildervault-web3-provider": "^0.0.4",
     "dotenv": "^16.4.5",
     "ts-node": "^10.9.2",
     "web3": "^4.15.0"
-  }
+  },
+  "type": "module"
 }

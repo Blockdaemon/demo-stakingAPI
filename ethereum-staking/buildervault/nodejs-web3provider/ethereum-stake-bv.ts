@@ -1,6 +1,6 @@
 import Web3 from "web3";
 import 'dotenv/config'
-import { BuildervaultWeb3Provider } from "@blockdaemon/buildervault-web3-provider";
+import { createEIP1193Provider } from "@blockdaemon/buildervault-web3-provider";
 
 
 type CreateStakeIntentRequest = {
@@ -66,8 +66,17 @@ async function main() {
     throw new Error('ETHEREUM_WITHDRAWAL_ADDRESS environment variable not set');
   }
 
-  const eip1193Provider = new BuildervaultWeb3Provider({
-    rpcUrl: process.env.BLOCKDAEMON_RPC_URL,
+  if (!process.env.BLOCKDAEMON_RPC_URL) {
+    throw new Error('BLOCKDAEMON_RPC_URL environment variable not set');
+  }
+
+  const chain = {
+    chainName: "Ethereum Holesky",
+    chainId: "0x4268",
+    rpcUrls: [process.env.BLOCKDAEMON_RPC_URL],
+  };
+  
+  const eip1193Provider = await createEIP1193Provider({
     playerCount: Number(process.env.BUILDERVAULT_PLAYER_COUNT),
 
     player0Url: process.env.BUILDERVAULT_PLAYER0_URL,
@@ -91,15 +100,16 @@ async function main() {
     player2ClientKey: process.env.BUILDERVAULT_PLAYER2_CLIENT_KEY,
     player2mTLSpublicKey: process.env.BUILDERVAULT_PLAYER2_MTLSPUBLICKEY,
 
-    masterKeyId: process.env.BUILDERVAULT_MASTERKEY_ID,
+    masterKeyId: process.env.BUILDERVAULT_MASTERKEY_ID!,
     accountId: Number(process.env.BUILDERVAULT_ACCOUNT_ID),
     addressIndex: Number(process.env.BUILDERVAULT_ADDRESS_INDEX),
-    logRequestsAndResponses: false  // Verbose logging
+
+    chains: [chain],
   })
 
   const web3 = new Web3(eip1193Provider);
 
-  const addresses = await web3.eth.getAccounts();
+  const addresses = await web3.eth.requestAccounts();
   const address = addresses[0];
   console.log("Ethereum addresses:", address);
   console.log("Initial balance:", await web3.eth.getBalance(address));
