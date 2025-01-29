@@ -74,9 +74,9 @@ async function main() {
     // Create a stake intent with the Blockdaemon API for Cardano
     const response = await createStakeIntent(process.env.BLOCKDAEMON_STAKE_API_KEY, {
         wallet_address: delegatorAddress,
-        public_key: "ed25519:97ZPzFy8L4QWG7BVk9Ca94qMKrUXjrYZUD3vNCnRrsur",
+        public_key: "ADD-PUBLIC-KEY", // https://nearvalidate.org/address/ will show you the public key of your address
         amount: "1000000000000000000000000", //In Yocto
-        to: "colossus.pool.f863973.m0"
+        to: "colossus.pool.f863973.m0" //validator pool
     });
 
 
