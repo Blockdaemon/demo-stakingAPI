@@ -6,3 +6,4 @@ init
 **/.env
 **/node_modules
 */.idea
+.idea

@@ -15,7 +15,7 @@ import { sha256 } from '@noble/hashes/sha256'
 
 import {connect, transactions, utils} from "near-api-js";
 
-// Define the types for Cardano Stake Intent
+// Define the types for Near Stake Intent
 export type NewStakeIntentNear = {
     wallet_address: string;
     public_key: string;
@@ -60,7 +60,7 @@ async function main() {
         secretKey: readFileSync(process.env.FIREBLOCKS_SECRET_KEY, "utf8"),
     });
 
-    // Fetch the Cardano vault account address from Fireblocks
+    // Fetch the Near vault account address from Fireblocks
     const vaultAccounts = await fireblocks.vaults.getVaultAccountAssetAddressesPaginated({
         vaultAccountId: process.env.FIREBLOCKS_VAULT_ACCOUNT_ID,
         assetId: assetID
@@ -71,7 +71,7 @@ async function main() {
     }
     console.log(`Near address: ${delegatorAddress}\n`);
 
-    // Create a stake intent with the Blockdaemon API for Cardano
+    // Create a stake intent with the Blockdaemon API for Near
     const response = await createStakeIntent(process.env.BLOCKDAEMON_STAKE_API_KEY, {
         wallet_address: delegatorAddress,
         public_key: "ADD-PUBLIC-KEY", // https://nearvalidate.org/address/ will show you the public key of your address
@@ -80,7 +80,7 @@ async function main() {
     });
 
 
-    // Check if Cardano-specific property exists
+    // Check if Near-specific property exists
     if (!response.near) {
         throw "Missing property `near` in Blockdaemon response";
     }
@@ -98,7 +98,7 @@ async function main() {
 
 }
 
-// Function for creating a stake intent with the Blockdaemon API for Cardano
+// Function for creating a stake intent with the Blockdaemon API for Near
 async function createStakeIntent(
     bossApiKey: string,
     request: NewStakeIntentNear,
