@@ -1,5 +1,5 @@
 
-# TypeScript Near staking with Fireblocks wallet
+# TypeScript Polkadot staking with Fireblocks wallet
 
 
 ### Prerequisites
@@ -22,7 +22,7 @@ npm install
 
 ### Step 3. Launch example.ts to generate the Stake Intent request, sign the request with Fireblocks and broadcast the transaction
 ```shell
-npm run start example.ts
+npm run example
 ```
-- [optional] view the signed transaction contents with inspector: https://nearblocks.io/
+- [optional] view the signed transaction contents with inspector: https://westend.subscan.io/
 - observe the confirmed transaction through the generated blockexplorer link
