@@ -10,7 +10,7 @@
 
 ### Step 1. Set environment variables in .env
 ```shell
-cd cardano-staking/fireblocks/nodejs/
+cd near-staking/fireblocks/nodejs/
 cp .env.example .env
 ```
 - update .env with API keys, Fireblocks Vault ID
@@ -26,3 +26,8 @@ npm run start example.ts
 ```
 - [optional] view the signed transaction contents with inspector: https://nearblocks.io/
 - observe the confirmed transaction through the generated blockexplorer link
+
+
+This leverages the following operation here at Blockdaemon. You will need a key for our staking API as well as one for the [Blockdaemon API suite](https://docs.blockdaemon.com/docs/quick-start-blockdaemon-api-suite)
+- https://docs.blockdaemon.com/reference/near-api-overview
+- https://docs.blockdaemon.com/reference/txcompileandsend-txapi
