@@ -22,7 +22,7 @@ Before starting, ensure you have the following:
 ### Step 1. Set environment variables in `.env`
 
 ```shell
-cd cardano-staking/fireblocks/nodejs/
+cd dot-staking/fireblocks/nodejs/
 cp .env.example .env
 ```
 
