@@ -1,28 +1,56 @@
+# TypeScript Polkadot Staking with Fireblocks Wallet
 
-# TypeScript Polkadot staking with Fireblocks wallet
+This project allows users to stake Polkadot tokens (DOT) or Westend tokens (WND) using the Fireblocks wallet to sign transactions and Blockdaemon Staking API to perform the staking. By integrating Fireblocks for secure signing and Blockdaemon for staking, this process is automated and seamless.
 
+---
 
 ### Prerequisites
-  - [Node.js](https://nodejs.org/en/download/package-manager) or launch in [code-spaces](https://codespaces.new/Blockdaemon/demo-buildervault-stakingAPI?quickstart=1)
-  - Create Fireblocks [API and Secret key](https://developers.fireblocks.com/docs/manage-api-keys) for use with the [Fireblocks TypeScript SDK](https://github.com/fireblocks/ts-sdk)
-  - Register free Blockdaemon [Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) and set in .env as BLOCKDAEMON_STAKE_API_KEY
 
+Before starting, ensure you have the following:
 
-### Step 1. Set environment variables in .env
+- **Node.js**: Ensure that [Node.js](https://nodejs.org/en/download/package-manager) is installed on your machine.
+- **Fireblocks Account**:
+    - [Create Fireblocks API and Secret key](https://developers.fireblocks.com/docs/manage-api-keys) to interact with the Fireblocks API.
+    - [Fireblocks TypeScript SDK](https://github.com/fireblocks/ts-sdk) for interacting with Fireblocks.
+- **Blockdaemon Staking API**:
+    - [Register for Blockdaemon's Staking API key](https://docs.blockdaemon.com/reference/get-started-staking-api#step-1-sign-up-for-an-api-key) to interact with their Staking API. Make sure to save this API key as `BLOCKDAEMON_STAKE_API_KEY` in your `.env` file.
+- **Polkadot Network Configuration**:
+    - Set the `POLKADOT_NETWORK` in `.env` to `mainnet` or `westend` depending on the network you're using.
+
+---
+
+### Step 1. Set environment variables in `.env`
+
 ```shell
 cd cardano-staking/fireblocks/nodejs/
 cp .env.example .env
 ```
-- update .env with API keys, Fireblocks Vault ID
 
-### Step 2. Install package dependancies
+Open .env and update the following environment variables:
+```shell
+BLOCKDAEMON_STAKE_API_KEY: Your Blockdaemon Staking API key.
+POLKADOT_NETWORK: Set to either mainnet or westend depending on the network you are using.
+FIREBLOCKS_API_KEY: Your Fireblocks API key.
+FIREBLOCKS_SECRET_KEY: Path to your Fireblocks secret key file.
+FIREBLOCKS_VAULT_ACCOUNT_ID: The vault account ID in Fireblocks for the asset you want to use (e.g., WND or DOT).
+BLOCKDAEMON_API_KEY: Your Blockdaemon API key.
+```
+
+### Step 2. Install dependencies
+
 ```shell
 npm install
 ```
+This will install all required packages, including the Fireblocks SDK and Blockdaemon's API interaction tools.
 
-### Step 3. Launch example.ts to generate the Stake Intent request, sign the request with Fireblocks and broadcast the transaction
+### Step 3. Launch example.ts to generate the Stake Intent request, sign the request with Fireblocks, and broadcast the transaction
 ```shell
 npm run example
 ```
-- [optional] view the signed transaction contents with inspector: https://westend.subscan.io/
-- observe the confirmed transaction through the generated blockexplorer link
+
+This will:
+
+Generate a Stake Intent request to initiate staking.
+Use Fireblocks to sign the transaction.
+Broadcast the transaction to the Polkadot network using Blockdaemon's Staking API.
+You can optionally view the signed transaction contents in a block explorer, such as [Westend Subscan](https://westend.subscan.io/), and track the confirmed transaction through the generated block explorer link.

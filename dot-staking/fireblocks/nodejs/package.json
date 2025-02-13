@@ -4,8 +4,6 @@
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "ts-node": "^10.9.2",
-    "@polkadot/api":  "15.5.2",
-    "@polkadot/util-crypto": "13.3.1",
     "bs58": "6.0.0",
     "node-fetch": "3.3.2"
   },
