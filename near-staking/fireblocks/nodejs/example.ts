@@ -87,7 +87,7 @@ async function main() {
     }
 
     // Sign the transaction via Fireblocks
-    const signedMessage = await signTx(response.near.unsigned_transaction, fireblocks, process.env.FIREBLOCKS_VAULT_ACCOUNT_ID!, config.assetID);
+    const signedMessage = await signTx(response.near.unsigned_transaction_hash, fireblocks, process.env.FIREBLOCKS_VAULT_ACCOUNT_ID!, config.assetID);
     if (!signedMessage) {
         throw new Error('Failed to sign transaction');
     }
@@ -131,14 +131,11 @@ async function createStakeIntent(
 
 // Function to sign the transaction via Fireblocks
 const signTx = async (
-    unsignedTransaction: string,
+    unsignedTransactionHash: string,
     fireblocks: Fireblocks,
     vaultAccount: string,
     assetID: string,
 ): Promise<{ signature: string; pubKey: string }> => {
-    const unsignedTxBytes = Buffer.from(unsignedTransaction, "hex");
-    const transactionHash = sha256(unsignedTxBytes);
-    const messageToSign = Buffer.from(transactionHash).toString("hex");
     const transactionPayload: TransactionRequest = {
         assetId: assetID,
         operation: TransactionOperation.Raw,
@@ -148,7 +145,7 @@ const signTx = async (
         },
         extraParameters: {
             rawMessageData: {
-                messages: [{ content: messageToSign }],
+                messages: [{ content: unsignedTransactionHash }],
             },
         },
     };
