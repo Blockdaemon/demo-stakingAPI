@@ -10,9 +10,6 @@ import {
     TransactionStateEnum,
     CreateTransactionResponse
 } from "@fireblocks/ts-sdk";
-import { sha256 } from '@noble/hashes/sha256'
-import * as borsh from "borsh"
-import { transactions } from "near-api-js";
 
 // Define the types for Near Stake Intent
 export type NewStakeIntentNear = {
@@ -92,18 +89,15 @@ async function main() {
         throw new Error('Failed to sign transaction');
     }
 
-    const encodedUnsignedMessage = await decodeAndEncodeBase64(response.near.unsigned_transaction)
+    const encodedUnsignedMessage = await hexToBase64(response.near.unsigned_transaction)
 
     await broadcastSignedTransaction(encodedUnsignedMessage, signedMessage.signature, config.compileAndSendUrl);
 }
 
 // Decode and encode the unsigned transaction to Base64
-async function decodeAndEncodeBase64(unsignedTxHex: string): Promise<string> {
+async function hexToBase64(unsignedTxHex: string): Promise<string> {
     const unsignedTxBuffer = Buffer.from(unsignedTxHex, 'hex');
-    const decodedTransaction = transactions.Transaction.decode(unsignedTxBuffer);
-    const schema = transactions.SCHEMA.Transaction;
-    const serializedTransaction = borsh.serialize(schema, decodedTransaction);
-    return Buffer.from(serializedTransaction).toString('base64');
+    return unsignedTxBuffer.toString('base64');
 }
 
 // Function for creating a stake intent with the Blockdaemon API for Near
