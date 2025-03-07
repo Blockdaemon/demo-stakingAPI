@@ -10,7 +10,8 @@
   "type": "module",
   "scripts": {
     "start": "node --no-warnings=ExperimentalWarning --loader ts-node/esm",
-    "example": "node --loader ts-node/esm example.ts"
+    "stake": "node --loader ts-node/esm stake.ts",
+    "bond": "node --loader ts-node/esm bond.ts"
   },
   "exclude": ["node_modules"]
 }

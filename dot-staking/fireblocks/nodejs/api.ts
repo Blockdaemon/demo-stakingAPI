@@ -13,6 +13,16 @@ export type StakeIntentResponse = {
     stake_intent_id: string;
 };
 
+export type BondExtraResponse = {
+    network: string;
+    polkadot: {
+        customer_address: string;
+        amount: string;
+        unsigned_transaction: string;
+    };
+    protocol: string;
+}
+
 export type DeriveTransactionResponse = {
     signing_payload: string;
     unsigned_tx: string;
@@ -25,6 +35,11 @@ export type CompileAndSendResponse = {
 // Request Body Types
 export type StakeIntentRequest = {
     customer_address: string;
+};
+
+export type BondExtraRequest = {
+    customer_address: string;
+    amount: string;
 };
 
 export type PrepareTransactionRequest = {
@@ -60,6 +75,29 @@ export async function fetchUnsignedTransaction(delegatorAddress: string): Promis
     }
 
     return (await response.json()) as StakeIntentResponse;
+}
+
+// Fetch Bond Extra
+export async function fetchBondExtraTransaction(delegatorAddress: string, amount: string): Promise<BondExtraResponse> {
+    const requestBody: BondExtraRequest = { customer_address: delegatorAddress, amount: amount };
+    const response = await fetch(
+        `https://svc.blockdaemon.com/boss/v1/polkadot/${process.env.POLKADOT_NETWORK}/bond-extra`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-API-Key": process.env.BLOCKDAEMON_STAKE_API_KEY!,
+            },
+            body: JSON.stringify(requestBody),
+        }
+    );
+
+    if (response.status !== 200) {
+        throw new Error(`Blockdaemon API Error: ${JSON.stringify(await response.json())}`);
+    }
+
+    return (await response.json()) as BondExtraResponse;
 }
 
 // Prepare Transaction

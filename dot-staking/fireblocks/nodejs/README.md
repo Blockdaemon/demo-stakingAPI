@@ -43,12 +43,17 @@ npm install
 ```
 This will install all required packages, including the Fireblocks SDK and Blockdaemon's API interaction tools.
 
-### Step 3. Launch example.ts to generate the Stake Intent request, sign the request with Fireblocks, and broadcast the transaction
+### Step 3. To perform a polkadot stake intent then run.
 ```shell
-npm run example
+npm run stake
 ```
+This will create the transaction to create a proxy on your account to Blockdaemons where we nominate on your behalf.
 
-This will:
+### Step 4. To perform a bond extra 
+```shell
+npm run bond
+```
+This will then bond extra funds to your already nominated pool.
 
 Generate a Stake Intent request to initiate staking.
 Use Fireblocks to sign the transaction.
