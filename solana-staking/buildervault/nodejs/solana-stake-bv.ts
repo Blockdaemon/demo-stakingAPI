@@ -1,4 +1,3 @@
-// @ts-ignore
 import { TSMClient, Configuration, SessionConfig, curves } from "@sepior/tsmsdkv2";
 import web3 from '@solana/web3.js';
 import bs58 from 'bs58';
@@ -64,11 +63,11 @@ async function main() {
 
   const config0 = await new Configuration("https://tsm-sandbox.prd.wallet.blockdaemon.app:8080");
   await config0.withPublicKeyPinning(cert0.publicKey.export({type: "spki",format: "der"}));
-  await config0.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "");
+  await config0.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "", "");
 
   const config1 = await new Configuration("https://tsm-sandbox.prd.wallet.blockdaemon.app:8081")
   await config1.withPublicKeyPinning(cert1.publicKey.export({type: "spki",format: "der"}));
-  await config1.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "");
+  await config1.withMTLSAuthentication("./client.key", "./client.crt",false, "", "", "", "");
 
   // Create clients for two MPC nodes
   const clients: TSMClient[] = [
@@ -105,7 +104,7 @@ async function main() {
 
   // Convert the Ed25519 public key to Base58 Solana address
 
-  const compressedPublicKey = await clients[0].Utils().pkixPublicKeyToCompressedPoint(publickeys[0]);
+  const compressedPublicKey = await clients[0].Utils().jsonPublicKeyToCompressedPoint(publickeys[0]);
   const delegatorAddress = new web3.PublicKey(bs58.encode(compressedPublicKey));
   console.log(`Solana address of derived key m/44/501: ${delegatorAddress}\n`);
 
@@ -258,7 +257,7 @@ async function signTx(
     partialSignatures
   );
 
-  return signature.signature;
+  return signature;
 }
 
 async function getKeyId(

@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@sepior/tsmsdkv2": "68.0.0",
+    "@sepior/tsmsdkv2": "^70.0.0",
     "@solana/web3.js": "^1.95.8",
     "@types/node": "^20.14.12",
     "bs58": "^6.0.0",
@@ -11,5 +11,7 @@
   "scripts": {
     "start": "node --no-warnings=ExperimentalWarning --loader ts-node/esm"
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
