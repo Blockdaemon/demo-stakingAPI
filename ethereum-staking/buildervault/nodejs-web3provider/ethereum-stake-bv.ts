@@ -1,7 +1,7 @@
-import Web3 from "web3";
+import Web3, { Uint256 } from "web3";
 import 'dotenv/config'
 import { createEIP1193Provider } from "@blockdaemon/buildervault-web3-provider";
-
+import { ABI } from "./BatchDeposit2ABI.ts";
 
 type CreateStakeIntentRequest = {
   stakes: {
@@ -44,9 +44,14 @@ function createStakeIntent(
   };
 
   return fetch(
-    `https://svc.blockdaemon.com/boss/v1/ethereum/${process.env.ETHEREUM_NETWORK}/stake-intents`,
+    `https://svc.blockdaemon.com/boss/v1/ethereum/${process.env.ETHEREUM_NETWORK}/stake-intents?validator_type=${process.env.ETHEREUM_VALIDATOR_TYPE}`,
     requestOptions,
-  ).then(response => response.json() as Promise<CreateStakeIntentResponse>);
+  ).then(response => {
+    if (!response.ok) {
+      throw new Error(`Failed to create stake intent: ${response.statusText}`);
+    }
+    return response.json() as Promise<CreateStakeIntentResponse>;
+  });
 }
 
 async function main() {
@@ -66,13 +71,17 @@ async function main() {
     throw new Error('ETHEREUM_WITHDRAWAL_ADDRESS environment variable not set');
   }
 
+  if (!process.env.ETHEREUM_VALIDATOR_TYPE) {
+    throw new Error('ETHEREUM_VALIDATOR_TYPE environment variable not set');
+  }
+
   if (!process.env.BLOCKDAEMON_RPC_URL) {
     throw new Error('BLOCKDAEMON_RPC_URL environment variable not set');
   }
 
   const chain = {
-    chainName: "Ethereum Holesky",
-    chainId: "0x4268",
+    chainName: "Ethereum Hoodi",
+    chainId: "0x88bb0",
     rpcUrls: [process.env.BLOCKDAEMON_RPC_URL],
   };
   
@@ -127,19 +136,41 @@ async function main() {
   const { unsigned_transaction, contract_address, stakes } = response.ethereum;
   const totalDepositAmount = stakes.reduce((sum, next) => sum + BigInt(next.amount), 0n) * gwei;
 
-  // Blockdaemon batch deposit smart contract ABI
-  const ABI = [{"inputs":[{"internalType":"contract IDepositContract","name":"_depositContract","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"uint256","name":"validUntil","type":"uint256"},{"internalType":"bytes","name":"args","type":"bytes"}],"name":"batchDeposit","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"depositContract","outputs":[{"internalType":"contract IDepositContract","name":"","type":"address"}],"stateMutability":"view","type":"function"}]
   const contract = new web3.eth.Contract(ABI, contract_address);
 
-  // Strip batchDeposit methodID
-  const data = unsigned_transaction.split("0x592c0b7d")[1];
-  const inputData = web3.eth.abi.decodeParameters(["uint256", "bytes"], data);
+  // Decode calldata using Web3's ABI decoder
+  let decodedData: {
+    deadline: Uint256;
+    values: Uint256[];
+    argv: Uint8Array;
+  };
+  try {
+    // Verify this is the batchDeposit function comparing the signature from the calldata (first 4 bytes)
+    if (unsigned_transaction.slice(0, 10) !== web3.eth.abi.encodeFunctionSignature('batchDeposit(uint256,uint256[],bytes)')) {
+      throw new Error(`Unexpected function signature: ${unsigned_transaction.slice(0, 10)}`);
+    }
 
-  // Invoke batchDeposit method
-  const txid = await contract.methods.batchDeposit(inputData[0], inputData[1]).send({
-          from: address,
-          value: totalDepositAmount.toString(10),
-    });
+    // Decode the parameters
+    const parameters = web3.eth.abi.decodeParameters(
+      ['uint256','uint256[]','bytes'],
+      '0x' + unsigned_transaction.slice(10)
+    );
+
+    decodedData = {
+      deadline: parameters[0] as Uint256,
+      values: parameters[1] as Uint256[],
+      argv: parameters[2] as Uint8Array
+    };
+  } catch (error) {
+    console.error('Error decoding calldata:', error);
+    throw new Error('Failed to decode transaction calldata');
+  }
+
+  // Invoke batchDeposit method with decoded parameters
+  const txid = await contract.methods.batchDeposit(decodedData.deadline, decodedData.values, decodedData.argv).send({
+    from: address,
+    value: totalDepositAmount.toString(10),
+  });
 
   console.log(`Broadcasted transaction hash: https://${process.env.ETHEREUM_NETWORK}.etherscan.io/tx/${txid.transactionHash}`);
 }
