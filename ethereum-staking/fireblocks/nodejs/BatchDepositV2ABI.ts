@@ -1,4 +1,4 @@
-export const ABI = [
+export const BatchDepositV2ABI = [
     {
         "inputs": [
             {

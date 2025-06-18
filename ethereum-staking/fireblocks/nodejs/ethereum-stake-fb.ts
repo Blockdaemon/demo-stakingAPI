@@ -2,7 +2,8 @@ import Web3, { Uint256 } from "web3";
 import 'dotenv/config'
 import { readFileSync } from 'fs';
 import { FireblocksWeb3Provider, ChainId, ApiBaseUrl } from "@fireblocks/fireblocks-web3-provider";
-import { ABI } from "./BatchDeposit2ABI.ts";
+import { BatchDepositV2ABI } from "./BatchDepositV2ABI.ts";
+import { BatchDepositV1ABI } from "./BatchDepositV1ABI.ts";
 
 type CreateStakeIntentRequest = {
   stakes: {
@@ -133,38 +134,49 @@ async function main() {
   const { unsigned_transaction, contract_address, stakes } = response.ethereum;
   const totalDepositAmount = stakes.reduce((sum, next) => sum + BigInt(next.amount), 0n) * gwei;
 
-  const contract = new web3.eth.Contract(ABI, contract_address);
-
-  // Decode calldata using Web3's ABI decoder
-  let decodedData: {
-    deadline: Uint256;
-    values: Uint256[];
-    argv: Uint8Array;
+  // Map BatchDeposit v1 & v2 function signatures to their respective ABI, parameter types, and decode logic
+  const signatures = {
+    [web3.eth.abi.encodeFunctionSignature('batchDeposit(uint256,bytes)')]: {
+      abi: BatchDepositV1ABI,
+      params: ['uint256', 'bytes'],
+      // Decode function for v1: returns [validUntil, args]
+      decode: (params: any) => [params[0], params[1]],
+    },
+    [web3.eth.abi.encodeFunctionSignature('batchDeposit(uint256,uint256[],bytes)')]: {
+      abi: BatchDepositV2ABI,
+      params: ['uint256', 'uint256[]', 'bytes'],
+      // Decode function for v2: returns [deadline, values, argv]
+      decode: (params: any) => [params[0], params[1], params[2]],
+    },
   };
+
+  // Extract the function signature from the calldata
+  const sig = unsigned_transaction.slice(0, 10);
+  // Lookup the config for the detected signature
+  const config = signatures[sig];
+  if (!config) throw new Error(`Unexpected function signature: ${sig}`);
+
+  // Instantiate the contract with the correct ABI
+  const contract = new web3.eth.Contract(config.abi, contract_address);
+
+  let decodedParams;
   try {
-    // Verify this is the batchDeposit function comparing the signature from the calldata (first 4 bytes)
-    if (unsigned_transaction.slice(0, 10) !== web3.eth.abi.encodeFunctionSignature('batchDeposit(uint256,uint256[],bytes)')) {
-      throw new Error(`Unexpected function signature: ${unsigned_transaction.slice(0, 10)}`);
-    }
-
-    // Decode the parameters
-    const parameters = web3.eth.abi.decodeParameters(
-      ['uint256','uint256[]','bytes'],
-      '0x' + unsigned_transaction.slice(10)
-    );
-
-    decodedData = {
-      deadline: parameters[0] as Uint256,
-      values: parameters[1] as Uint256[],
-      argv: parameters[2] as Uint8Array
-    };
+    // Decode the calldata parameters using the ABI definition
+    const params = web3.eth.abi.decodeParameters(config.params, '0x' + unsigned_transaction.slice(10));
+    // Use the decode function to get the correct argument array
+    decodedParams = config.decode(params);
   } catch (error) {
     console.error('Error decoding calldata:', error);
     throw new Error('Failed to decode transaction calldata');
   }
 
-  // Invoke batchDeposit method with decoded parameters
-  const txid = await contract.methods.batchDeposit(decodedData.deadline, decodedData.values, decodedData.argv).send({
+  // Call the batchDeposit method with the decoded parameters
+  // Handles both v1 (2 params) and v2 (3 params) signatures
+  const txid = await contract.methods.batchDeposit(
+    ...(config.params.length === 2
+      ? [decodedParams[0], decodedParams[1]]
+      : [decodedParams[0], decodedParams[1], decodedParams[2]])
+  ).send({
     from: address,
     value: totalDepositAmount.toString(10),
   });
