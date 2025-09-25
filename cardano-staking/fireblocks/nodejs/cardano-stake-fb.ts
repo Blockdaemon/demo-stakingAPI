@@ -21,13 +21,25 @@ import {
 // Define the types for Cardano Stake Intent
 export type NewStakeIntentCardano = {
     base_address: string;
+    plan_id: string;
 };
+
+export type SubmitTransaction = {
+    customer_id: string;
+    network: string;
+    protocol: string;
+    transaction_id: string;
+}
 
 async function main() {
 
     // Check for the required environment variables
     if (!process.env.BLOCKDAEMON_STAKE_API_KEY) {
         throw new Error('BLOCKDAEMON_STAKE_API_KEY environment variable not set');
+    }
+
+    if (!process.env.PLAN_ID) {
+        throw new Error('PLAN_ID environment variable not set');
     }
 
     if (!process.env.CARDANO_NETWORK) {
@@ -74,6 +86,7 @@ async function main() {
     // Create a stake intent with the Blockdaemon API for Cardano
     const response = await createStakeIntent(process.env.BLOCKDAEMON_STAKE_API_KEY, {
         base_address: delegatorAddress,
+        plan_id: process.env.PLAN_ID ?? ""
     });
 
     // Check if Cardano-specific property exists
@@ -99,8 +112,9 @@ async function main() {
     const signedTransaction = createSignedTransaction(unsignedTransactionBody, signedMessages);
     console.log(`Signed transaction (CBOR): ${Buffer.from(signedTransaction).toString('hex')}`);
 
-
-    // Then take the result above and publish it here - https://docs.blockdaemon.com/reference/submittransaction
+    const broadcastTransaction = await submitTransaction(process.env.BLOCKDAEMON_STAKE_API_KEY, Buffer.from(signedTransaction).toString('hex'))
+    console.log(`Submitted transaction: ${broadcastTransaction.transaction_id}`)
+    // The transaction ID logged above can be queried on the explorer.
 }
 
 // Function for creating a stake intent with the Blockdaemon API for Cardano
@@ -126,6 +140,32 @@ async function createStakeIntent(
         throw await response.json();
     }
     return await response.json();
+}
+
+async function submitTransaction(
+    bossApiKey: string,
+    signed_transaction: string,
+): Promise<SubmitTransaction> {
+    const body = {
+        "signed_transaction": signed_transaction
+    }
+    const requestOptions = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-API-Key': bossApiKey,
+        },
+        body: JSON.stringify(body),
+    };
+    const response = await fetch(
+        `https://svc.blockdaemon.com/boss/v1/cardano/${process.env.CARDANO_NETWORK}/transaction-submission`,
+        requestOptions
+    );
+    if (response.status != 200) {
+        throw await response.json();
+    }
+    return await response.json() as SubmitTransaction;
 }
 
 // Function to sign the transaction via Fireblocks
